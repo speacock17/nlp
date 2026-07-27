@@ -1,0 +1,63 @@
+PREFIX dbo: <http://dbpedia.org/ontology/>
+PREFIX dbp: <http://dbpedia.org/property/>
+PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT
+  ?place
+  (SAMPLE(?nameValue) AS ?name)
+  (SAMPLE(?addressValue) AS ?address)
+  (SAMPLE(?latitudeValue) AS ?latitude)
+  (SAMPLE(?longitudeValue) AS ?longitude)
+  (SAMPLE(?descriptionValue) AS ?description)
+  (SAMPLE(?imageValue) AS ?image)
+WHERE {
+  VALUES ?place {
+    <http://dbpedia.org/resource/Museo_di_Capodimonte>
+    <http://dbpedia.org/resource/Palazzo_Zevallos_Stigliano>
+    <http://dbpedia.org/resource/Pio_Monte_della_Misericordia>
+  }
+
+  OPTIONAL {
+    ?place rdfs:label ?nameIt .
+    FILTER(LANG(?nameIt) = "it")
+  }
+
+  OPTIONAL {
+    ?place rdfs:label ?nameEn .
+    FILTER(LANG(?nameEn) = "en")
+  }
+
+  BIND(COALESCE(?nameIt, ?nameEn) AS ?nameValue)
+
+  OPTIONAL {
+    {
+      ?place dbo:address ?addressValue .
+    }
+    UNION
+    {
+      ?place dbp:address ?addressValue .
+    }
+
+    FILTER(ISLITERAL(?addressValue))
+  }
+
+  OPTIONAL {
+    ?place geo:lat ?latitudeValue .
+  }
+
+  OPTIONAL {
+    ?place geo:long ?longitudeValue .
+  }
+
+  OPTIONAL {
+    ?place dbo:description ?descriptionValue .
+    FILTER(LANG(?descriptionValue) = "it")
+  }
+
+  OPTIONAL {
+    ?place dbo:thumbnail ?imageValue .
+  }
+}
+GROUP BY ?place
+ORDER BY ?place

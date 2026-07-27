@@ -1,0 +1,635 @@
+{
+  "metadata": {
+    "source": "DBpedia Italian dumps",
+    "objects_version": "2020.08.01",
+    "literals_version": "2020.08.01",
+    "labels_version": "2020.07.01"
+  },
+  "artist": {
+    "uri": "http://it.dbpedia.org/resource/Battistello_Caracciolo",
+    "name": "Battistello Caracciolo",
+    "name_source": "rdfs:label",
+    "birth_place_uri": "http://it.dbpedia.org/resource/Napoli",
+    "death_place_uri": "http://it.dbpedia.org/resource/Napoli",
+    "literal_properties": {
+      "http://dbpedia.org/ontology/birthYear": [
+        {
+          "value": "1578",
+          "language": null,
+          "datatype": "http://www.w3.org/2001/XMLSchema#gYear"
+        }
+      ],
+      "http://dbpedia.org/ontology/deathYear": [
+        {
+          "value": "1635",
+          "language": null,
+          "datatype": "http://www.w3.org/2001/XMLSchema#gYear"
+        }
+      ],
+      "http://dbpedia.org/ontology/formerName": [
+        {
+          "value": "detto Battistello",
+          "language": "it",
+          "datatype": null
+        }
+      ],
+      "http://xmlns.com/foaf/0.1/name": [
+        {
+          "value": "Giovanni Battista",
+          "language": "it",
+          "datatype": null
+        }
+      ],
+      "http://xmlns.com/foaf/0.1/surname": [
+        {
+          "value": "Caracciolo",
+          "language": "it",
+          "datatype": null
+        }
+      ]
+    }
+  },
+  "artworks": [
+    {
+      "uri": "http://it.dbpedia.org/resource/Amore_dormiente",
+      "title": "Amore dormiente",
+      "title_source": "rdfs:label",
+      "artist_uri": "http://it.dbpedia.org/resource/Battistello_Caracciolo",
+      "location_uris": [
+        "http://it.dbpedia.org/resource/Palazzo_Abatellis",
+        "http://it.dbpedia.org/resource/Palermo"
+      ],
+      "venue_uris": [
+        "http://it.dbpedia.org/resource/Palazzo_Abatellis",
+        "http://it.dbpedia.org/resource/Palermo"
+      ],
+      "is_naples_candidate": false,
+      "literal_properties": {
+        "http://dbpedia.org/ontology/height": [
+          {
+            "value": "0.725",
+            "language": null,
+            "datatype": "http://www.w3.org/2001/XMLSchema#double"
+          }
+        ],
+        "http://dbpedia.org/ontology/technique": [
+          {
+            "value": "olio su tela",
+            "language": null,
+            "datatype": null
+          }
+        ],
+        "http://dbpedia.org/ontology/width": [
+          {
+            "value": "0.965",
+            "language": null,
+            "datatype": "http://www.w3.org/2001/XMLSchema#double"
+          }
+        ],
+        "http://xmlns.com/foaf/0.1/name": [
+          {
+            "value": "Amore dormiente",
+            "language": "it",
+            "datatype": null
+          }
+        ]
+      }
+    },
+    {
+      "uri": "http://it.dbpedia.org/resource/Battesimo_di_Cristo_(Battistello_Caracciolo)",
+      "title": "Battesimo di Cristo (Battistello Caracciolo)",
+      "title_source": "rdfs:label",
+      "artist_uri": "http://it.dbpedia.org/resource/Battistello_Caracciolo",
+      "location_uris": [
+        "http://it.dbpedia.org/resource/Napoli",
+        "http://it.dbpedia.org/resource/Quadreria_dei_Girolamini"
+      ],
+      "venue_uris": [
+        "http://it.dbpedia.org/resource/Quadreria_dei_Girolamini"
+      ],
+      "is_naples_candidate": true,
+      "literal_properties": {
+        "http://dbpedia.org/ontology/height": [
+          {
+            "value": "1.16",
+            "language": null,
+            "datatype": "http://www.w3.org/2001/XMLSchema#double"
+          }
+        ],
+        "http://dbpedia.org/ontology/imageSize": [
+          {
+            "value": "250",
+            "language": null,
+            "datatype": "http://www.w3.org/2001/XMLSchema#integer"
+          }
+        ],
+        "http://dbpedia.org/ontology/technique": [
+          {
+            "value": "olio su tela",
+            "language": null,
+            "datatype": null
+          }
+        ],
+        "http://dbpedia.org/ontology/width": [
+          {
+            "value": "1.45",
+            "language": null,
+            "datatype": "http://www.w3.org/2001/XMLSchema#double"
+          }
+        ],
+        "http://xmlns.com/foaf/0.1/name": [
+          {
+            "value": "Battesimo di Cristo",
+            "language": "it",
+            "datatype": null
+          }
+        ]
+      }
+    },
+    {
+      "uri": "http://it.dbpedia.org/resource/Cristo_alla_colonna_(Battistello_Caracciolo)",
+      "title": "Cristo alla colonna",
+      "title_source": "foaf:name",
+      "artist_uri": "http://it.dbpedia.org/resource/Battistello_Caracciolo",
+      "location_uris": [
+        "http://it.dbpedia.org/resource/Museo_nazionale_di_Capodimonte",
+        "http://it.dbpedia.org/resource/Napoli"
+      ],
+      "venue_uris": [
+        "http://it.dbpedia.org/resource/Museo_nazionale_di_Capodimonte"
+      ],
+      "is_naples_candidate": true,
+      "literal_properties": {
+        "http://dbpedia.org/ontology/height": [
+          {
+            "value": "1.84",
+            "language": null,
+            "datatype": "http://www.w3.org/2001/XMLSchema#double"
+          }
+        ],
+        "http://dbpedia.org/ontology/technique": [
+          {
+            "value": "olio su tela",
+            "language": null,
+            "datatype": null
+          }
+        ],
+        "http://dbpedia.org/ontology/width": [
+          {
+            "value": "1.3",
+            "language": null,
+            "datatype": "http://www.w3.org/2001/XMLSchema#double"
+          }
+        ],
+        "http://xmlns.com/foaf/0.1/name": [
+          {
+            "value": "Cristo alla colonna",
+            "language": "it",
+            "datatype": null
+          }
+        ]
+      }
+    },
+    {
+      "uri": "http://it.dbpedia.org/resource/Crocifissione_di_Cristo_(Battistello_Caracciolo)",
+      "title": "Crocifissione di Cristo",
+      "title_source": "foaf:name",
+      "artist_uri": "http://it.dbpedia.org/resource/Battistello_Caracciolo",
+      "location_uris": [
+        "http://it.dbpedia.org/resource/Museo_nazionale_di_Capodimonte",
+        "http://it.dbpedia.org/resource/Napoli"
+      ],
+      "venue_uris": [
+        "http://it.dbpedia.org/resource/Museo_nazionale_di_Capodimonte"
+      ],
+      "is_naples_candidate": true,
+      "literal_properties": {
+        "http://dbpedia.org/ontology/height": [
+          {
+            "value": "1.51",
+            "language": null,
+            "datatype": "http://www.w3.org/2001/XMLSchema#double"
+          }
+        ],
+        "http://dbpedia.org/ontology/technique": [
+          {
+            "value": "olio su tela",
+            "language": null,
+            "datatype": null
+          }
+        ],
+        "http://dbpedia.org/ontology/width": [
+          {
+            "value": "1.035",
+            "language": null,
+            "datatype": "http://www.w3.org/2001/XMLSchema#double"
+          }
+        ],
+        "http://xmlns.com/foaf/0.1/name": [
+          {
+            "value": "Crocifissione di Cristo",
+            "language": "it",
+            "datatype": null
+          }
+        ]
+      }
+    },
+    {
+      "uri": "http://it.dbpedia.org/resource/Immacolata_Concezione_con_san_Domenico_e_san_Francesco_di_Paola",
+      "title": "Immacolata Concezione con san Domenico e san Francesco di Paola",
+      "title_source": "foaf:name",
+      "artist_uri": "http://it.dbpedia.org/resource/Battistello_Caracciolo",
+      "location_uris": [
+        "http://it.dbpedia.org/resource/Chiesa_di_Santa_Maria_della_Stella",
+        "http://it.dbpedia.org/resource/Napoli"
+      ],
+      "venue_uris": [
+        "http://it.dbpedia.org/resource/Chiesa_di_Santa_Maria_della_Stella"
+      ],
+      "is_naples_candidate": true,
+      "literal_properties": {
+        "http://dbpedia.org/ontology/height": [
+          {
+            "value": "3.34",
+            "language": null,
+            "datatype": "http://www.w3.org/2001/XMLSchema#double"
+          }
+        ],
+        "http://dbpedia.org/ontology/technique": [
+          {
+            "value": "olio su tela",
+            "language": null,
+            "datatype": null
+          }
+        ],
+        "http://dbpedia.org/ontology/width": [
+          {
+            "value": "2.09",
+            "language": null,
+            "datatype": "http://www.w3.org/2001/XMLSchema#double"
+          }
+        ],
+        "http://xmlns.com/foaf/0.1/name": [
+          {
+            "value": "Immacolata Concezione con san Domenico e san Francesco di Paola",
+            "language": "it",
+            "datatype": null
+          }
+        ]
+      }
+    },
+    {
+      "uri": "http://it.dbpedia.org/resource/Lavanda_dei_piedi_(Caracciolo)",
+      "title": "Lavanda dei piedi (Caracciolo)",
+      "title_source": "rdfs:label",
+      "artist_uri": "http://it.dbpedia.org/resource/Battistello_Caracciolo",
+      "location_uris": [
+        "http://it.dbpedia.org/resource/Certosa_di_San_Martino",
+        "http://it.dbpedia.org/resource/Napoli"
+      ],
+      "venue_uris": [
+        "http://it.dbpedia.org/resource/Certosa_di_San_Martino"
+      ],
+      "is_naples_candidate": true,
+      "literal_properties": {
+        "http://dbpedia.org/ontology/height": [
+          {
+            "value": "4.0",
+            "language": null,
+            "datatype": "http://www.w3.org/2001/XMLSchema#double"
+          }
+        ],
+        "http://dbpedia.org/ontology/imageSize": [
+          {
+            "value": "300",
+            "language": null,
+            "datatype": "http://www.w3.org/2001/XMLSchema#integer"
+          }
+        ],
+        "http://dbpedia.org/ontology/technique": [
+          {
+            "value": "olio su tela",
+            "language": null,
+            "datatype": null
+          }
+        ],
+        "http://dbpedia.org/ontology/width": [
+          {
+            "value": "4.0",
+            "language": null,
+            "datatype": "http://www.w3.org/2001/XMLSchema#double"
+          }
+        ],
+        "http://xmlns.com/foaf/0.1/name": [
+          {
+            "value": "Lavanda dei piedi",
+            "language": "it",
+            "datatype": null
+          }
+        ]
+      }
+    },
+    {
+      "uri": "http://it.dbpedia.org/resource/Liberazione_di_san_Pietro_(Caracciolo)",
+      "title": "Liberazione di san Pietro (Caracciolo)",
+      "title_source": "rdfs:label",
+      "artist_uri": "http://it.dbpedia.org/resource/Battistello_Caracciolo",
+      "location_uris": [
+        "http://it.dbpedia.org/resource/Napoli",
+        "http://it.dbpedia.org/resource/Pio_Monte_della_Misericordia"
+      ],
+      "venue_uris": [
+        "http://it.dbpedia.org/resource/Pio_Monte_della_Misericordia"
+      ],
+      "is_naples_candidate": true,
+      "literal_properties": {
+        "http://dbpedia.org/ontology/height": [
+          {
+            "value": "3.1",
+            "language": null,
+            "datatype": "http://www.w3.org/2001/XMLSchema#double"
+          }
+        ],
+        "http://dbpedia.org/ontology/imageSize": [
+          {
+            "value": "250",
+            "language": null,
+            "datatype": "http://www.w3.org/2001/XMLSchema#integer"
+          }
+        ],
+        "http://dbpedia.org/ontology/technique": [
+          {
+            "value": "olio su tela",
+            "language": null,
+            "datatype": null
+          }
+        ],
+        "http://dbpedia.org/ontology/width": [
+          {
+            "value": "2.07",
+            "language": null,
+            "datatype": "http://www.w3.org/2001/XMLSchema#double"
+          }
+        ],
+        "http://xmlns.com/foaf/0.1/name": [
+          {
+            "value": "Liberazione di san Pietro",
+            "language": "it",
+            "datatype": null
+          }
+        ]
+      }
+    },
+    {
+      "uri": "http://it.dbpedia.org/resource/Madonna_delle_anime_purganti_tra_san_Francesco_e_santa_Chiara",
+      "title": "Madonna delle anime purganti tra san Francesco d'Assisi e santa Chiara",
+      "title_source": "foaf:name",
+      "artist_uri": "http://it.dbpedia.org/resource/Battistello_Caracciolo",
+      "location_uris": [
+        "http://it.dbpedia.org/resource/Museo_nazionale_di_Capodimonte",
+        "http://it.dbpedia.org/resource/Napoli"
+      ],
+      "venue_uris": [
+        "http://it.dbpedia.org/resource/Museo_nazionale_di_Capodimonte"
+      ],
+      "is_naples_candidate": true,
+      "literal_properties": {
+        "http://dbpedia.org/ontology/height": [
+          {
+            "value": "3.0",
+            "language": null,
+            "datatype": "http://www.w3.org/2001/XMLSchema#double"
+          }
+        ],
+        "http://dbpedia.org/ontology/technique": [
+          {
+            "value": "olio su tela",
+            "language": null,
+            "datatype": null
+          }
+        ],
+        "http://dbpedia.org/ontology/width": [
+          {
+            "value": "1.9",
+            "language": null,
+            "datatype": "http://www.w3.org/2001/XMLSchema#double"
+          }
+        ],
+        "http://xmlns.com/foaf/0.1/name": [
+          {
+            "value": "Madonna delle anime purganti tra san Francesco d'Assisi e santa Chiara",
+            "language": "it",
+            "datatype": null
+          }
+        ]
+      }
+    },
+    {
+      "uri": "http://it.dbpedia.org/resource/Storie_di_Consalvo_di_Córdoba",
+      "title": "Storie di Consalvo di Córdoba",
+      "title_source": "rdfs:label",
+      "artist_uri": "http://it.dbpedia.org/resource/Battistello_Caracciolo",
+      "location_uris": [
+        "http://it.dbpedia.org/resource/Napoli",
+        "http://it.dbpedia.org/resource/Palazzo_Reale_di_Napoli"
+      ],
+      "venue_uris": [
+        "http://it.dbpedia.org/resource/Palazzo_Reale_di_Napoli"
+      ],
+      "is_naples_candidate": true,
+      "literal_properties": {
+        "http://dbpedia.org/ontology/technique": [
+          {
+            "value": "affresco",
+            "language": null,
+            "datatype": null
+          }
+        ],
+        "http://xmlns.com/foaf/0.1/name": [
+          {
+            "value": "Storie di Consalvo di Córdoba",
+            "language": "it",
+            "datatype": null
+          }
+        ]
+      }
+    }
+  ],
+  "places": [
+    {
+      "uri": "http://it.dbpedia.org/resource/Certosa_di_San_Martino",
+      "name": "Certosa di San Martino",
+      "name_source": "rdfs:label",
+      "literal_properties": {
+        "http://dbpedia.org/ontology/buildingEndDate": [
+          {
+            "value": "prima metà delXVIII secolo",
+            "language": null,
+            "datatype": null
+          }
+        ],
+        "http://dbpedia.org/ontology/buildingStartDate": [
+          {
+            "value": "1325",
+            "language": null,
+            "datatype": null
+          }
+        ],
+        "http://dbpedia.org/ontology/iso31661Code": [
+          {
+            "value": "ITA",
+            "language": null,
+            "datatype": null
+          }
+        ],
+        "http://dbpedia.org/ontology/openingYear": [
+          {
+            "value": "1368",
+            "language": null,
+            "datatype": "http://www.w3.org/2001/XMLSchema#gYear"
+          }
+        ],
+        "http://xmlns.com/foaf/0.1/name": [
+          {
+            "value": "Certosa di San Martino",
+            "language": "it",
+            "datatype": null
+          },
+          {
+            "value": "La certosa di San Martino",
+            "language": "it",
+            "datatype": null
+          }
+        ]
+      }
+    },
+    {
+      "uri": "http://it.dbpedia.org/resource/Chiesa_di_Santa_Maria_della_Stella",
+      "name": "Chiesa di Santa Maria della Stella",
+      "name_source": "rdfs:label",
+      "literal_properties": {
+        "http://dbpedia.org/ontology/iso31661Code": [
+          {
+            "value": "ITA",
+            "language": null,
+            "datatype": null
+          }
+        ],
+        "http://xmlns.com/foaf/0.1/name": [
+          {
+            "value": "Chiesa di Santa Maria della Stella",
+            "language": "it",
+            "datatype": null
+          },
+          {
+            "value": "La facciata",
+            "language": "it",
+            "datatype": null
+          }
+        ]
+      }
+    },
+    {
+      "uri": "http://it.dbpedia.org/resource/Museo_nazionale_di_Capodimonte",
+      "name": "Museo nazionale di Capodimonte",
+      "name_source": "rdfs:label",
+      "literal_properties": {
+        "http://dbpedia.org/ontology/address": [
+          {
+            "value": "Via Miano, 2",
+            "language": "it",
+            "datatype": null
+          }
+        ]
+      }
+    },
+    {
+      "uri": "http://it.dbpedia.org/resource/Palazzo_Abatellis",
+      "name": "Palazzo Abatellis",
+      "name_source": "rdfs:label",
+      "literal_properties": {}
+    },
+    {
+      "uri": "http://it.dbpedia.org/resource/Palazzo_Reale_di_Napoli",
+      "name": "Palazzo Reale di Napoli",
+      "name_source": "rdfs:label",
+      "literal_properties": {}
+    },
+    {
+      "uri": "http://it.dbpedia.org/resource/Palermo",
+      "name": "Palermo",
+      "name_source": "rdfs:label",
+      "literal_properties": {
+        "http://dbpedia.org/ontology/area": [
+          {
+            "value": "1.6E8",
+            "language": null,
+            "datatype": "http://www.w3.org/2001/XMLSchema#double"
+          }
+        ],
+        "http://dbpedia.org/ontology/demonym": [
+          {
+            "value": "palermitani o panormiti",
+            "language": "it",
+            "datatype": null
+          }
+        ],
+        "http://dbpedia.org/ontology/electionDate": [
+          {
+            "value": "2012-05-22",
+            "language": null,
+            "datatype": "http://www.w3.org/2001/XMLSchema#date"
+          }
+        ],
+        "http://dbpedia.org/ontology/populationAsOf": [
+          {
+            "value": "2019-10-31",
+            "language": null,
+            "datatype": "http://www.w3.org/2001/XMLSchema#date"
+          }
+        ],
+        "http://dbpedia.org/ontology/populationTotal": [
+          {
+            "value": "658403",
+            "language": null,
+            "datatype": "http://www.w3.org/2001/XMLSchema#nonNegativeInteger"
+          }
+        ],
+        "http://dbpedia.org/ontology/postalCode": [
+          {
+            "value": "90100, 90121-90151",
+            "language": null,
+            "datatype": null
+          }
+        ],
+        "http://xmlns.com/foaf/0.1/name": [
+          {
+            "value": "Palermo",
+            "language": "it",
+            "datatype": null
+          }
+        ]
+      }
+    },
+    {
+      "uri": "http://it.dbpedia.org/resource/Pio_Monte_della_Misericordia",
+      "name": "Pio Monte della Misericordia",
+      "name_source": "rdfs:label",
+      "literal_properties": {
+        "http://dbpedia.org/ontology/address": [
+          {
+            "value": "Via dei Tribunali, 253",
+            "language": "it",
+            "datatype": null
+          }
+        ]
+      }
+    },
+    {
+      "uri": "http://it.dbpedia.org/resource/Quadreria_dei_Girolamini",
+      "name": "Quadreria dei Girolamini",
+      "name_source": "rdfs:label",
+      "literal_properties": {}
+    }
+  ]
+}
