@@ -1,4 +1,4 @@
-﻿import unittest
+import unittest
 
 from src.core.enums import Intent
 from src.core.models import BotResponse, NLUResult
@@ -26,7 +26,12 @@ class DialogueManagerTest(unittest.TestCase):
             self.knowledge_repository
         )
         self.manager = DialogueManager(
-            self.memory_repository
+            knowledge_repository=(
+                self.knowledge_repository
+            ),
+            memory_repository=(
+                self.memory_repository
+            ),
         )
 
     def _process(

@@ -1,6 +1,9 @@
-﻿from datetime import datetime, timezone
+from datetime import datetime, timezone
 
-from src.core.interfaces import MemoryRepository
+from src.core.interfaces import (
+    KnowledgeRepository,
+    MemoryRepository,
+)
 from src.core.models import (
     BotResponse,
     ConversationTurn,
@@ -12,8 +15,10 @@ from src.core.models import (
 class DialogueManager:
     def __init__(
         self,
+        knowledge_repository: KnowledgeRepository,
         memory_repository: MemoryRepository,
     ) -> None:
+        self._knowledge_repository = knowledge_repository
         self._memory_repository = memory_repository
 
     def record_turn(
