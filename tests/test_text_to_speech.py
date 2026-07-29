@@ -40,6 +40,39 @@ class TextToSpeechTest(unittest.TestCase):
             "Buongiorno"
         )
 
+    def test_creates_new_engine_for_each_speech(self) -> None:
+        first_engine = MagicMock()
+        second_engine = MagicMock()
+        engine_factory = MagicMock(
+            side_effect=[
+                first_engine,
+                second_engine,
+            ]
+        )
+
+        tts = TextToSpeech(
+            engine_factory=engine_factory,
+            rate=170,
+            volume=0.9,
+        )
+
+        tts.speak("Prima frase.")
+        tts.speak("Seconda frase.")
+
+        self.assertEqual(
+            engine_factory.call_count,
+            2,
+        )
+        first_engine.say.assert_called_once_with(
+            "Prima frase."
+        )
+        second_engine.say.assert_called_once_with(
+            "Seconda frase."
+        )
+        first_engine.runAndWait.assert_called_once_with()
+        second_engine.runAndWait.assert_called_once_with()
+
+
     def test_rejects_empty_text(self) -> None:
         with self.assertRaises(ValueError):
             self.tts.speak("   ")

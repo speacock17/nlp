@@ -13,12 +13,27 @@ class SpeechToText:
         recognizer: sr.Recognizer | None = None,
         microphone_factory=None,
         language: str = "it-IT",
+        pause_threshold: float = 1.5,
     ) -> None:
+        if not isinstance(pause_threshold, (int, float)):
+            raise TypeError(
+                "pause_threshold deve essere numerico"
+            )
+
+        if pause_threshold <= 0:
+            raise ValueError(
+                "pause_threshold deve essere maggiore di zero"
+            )
+
         self._recognizer = recognizer or sr.Recognizer()
         self._microphone_factory = (
             microphone_factory or sr.Microphone
         )
         self._language = language
+
+        self._recognizer.pause_threshold = float(
+            pause_threshold
+        )
 
     def listen(
         self,
@@ -63,20 +78,20 @@ class SpeechToText:
 
         except sr.UnknownValueError as error:
             raise SpeechNotUnderstoodError(
-                "Non ? stato possibile comprendere l'audio"
+                "Non è stato possibile comprendere l'audio"
             ) from error
 
         except sr.RequestError as error:
             raise SpeechRecognitionServiceError(
                 "Il servizio di riconoscimento vocale "
-                "non ? disponibile"
+                "non è disponibile"
             ) from error
 
         transcription = transcription.strip()
 
         if not transcription:
             raise SpeechNotUnderstoodError(
-                "La trascrizione ottenuta ? vuota"
+                "La trascrizione ottenuta è vuota"
             )
 
         return transcription

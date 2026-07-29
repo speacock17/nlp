@@ -38,6 +38,22 @@ class SpeechToTextTest(unittest.TestCase):
             language="it-IT",
         )
 
+    def test_configures_pause_threshold(self) -> None:
+        recognizer = MagicMock()
+
+        SpeechToText(
+            recognizer=recognizer,
+            microphone_factory=self.microphone_factory,
+            language="it-IT",
+            pause_threshold=1.5,
+        )
+
+        self.assertEqual(
+            recognizer.pause_threshold,
+            1.5,
+        )
+
+
     def test_listens_and_returns_transcription(
         self,
     ) -> None:
