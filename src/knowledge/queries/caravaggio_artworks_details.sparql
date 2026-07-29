@@ -1,0 +1,82 @@
+PREFIX dbr: <http://dbpedia.org/resource/>
+PREFIX dbo: <http://dbpedia.org/ontology/>
+PREFIX dbp: <http://dbpedia.org/property/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT
+  ?artwork
+  (SAMPLE(?titleValue) AS ?title)
+  (SAMPLE(?artistValue) AS ?artist)
+  (SAMPLE(?artistNameValue) AS ?artistName)
+  (SAMPLE(?placeValue) AS ?place)
+  (SAMPLE(?placeNameValue) AS ?placeName)
+  (SAMPLE(?yearValue) AS ?year)
+  (SAMPLE(?completionDateValue) AS ?completionDate)
+  (SAMPLE(?mediumValue) AS ?medium)
+  (SAMPLE(?descriptionValue) AS ?description)
+  (SAMPLE(?imageValue) AS ?image)
+WHERE {
+  ?artwork
+    (dbo:author|dbp:artist) dbr:Caravaggio ;
+    (dbo:museum|dbp:museum) ?placeValue ;
+    dbp:city dbr:Naples .
+
+  BIND(dbr:Caravaggio AS ?artistValue)
+
+  OPTIONAL {
+    ?artwork rdfs:label ?titleValue .
+    FILTER(LANG(?titleValue) = "it")
+  }
+
+  OPTIONAL {
+    dbr:Caravaggio rdfs:label ?artistNameValue .
+    FILTER(LANG(?artistNameValue) = "it")
+  }
+
+  OPTIONAL {
+    ?placeValue rdfs:label ?placeNameValue .
+    FILTER(LANG(?placeNameValue) = "it")
+  }
+
+  OPTIONAL {
+    ?artwork dbp:year ?yearValue .
+  }
+
+  OPTIONAL {
+    ?artwork dbo:completionDate ?completionDateValue .
+  }
+
+  OPTIONAL {
+    ?artwork dbp:medium ?mediumRaw .
+
+    OPTIONAL {
+      ?mediumRaw rdfs:label ?mediumLabelIt .
+      FILTER(LANG(?mediumLabelIt) = "it")
+    }
+
+    OPTIONAL {
+      ?mediumRaw rdfs:label ?mediumLabelEn .
+      FILTER(LANG(?mediumLabelEn) = "en")
+    }
+
+    BIND(
+      COALESCE(
+        ?mediumLabelIt,
+        ?mediumLabelEn,
+        ?mediumRaw
+      )
+      AS ?mediumValue
+    )
+  }
+
+  OPTIONAL {
+    ?artwork dbo:description ?descriptionValue .
+    FILTER(LANG(?descriptionValue) = "it")
+  }
+
+  OPTIONAL {
+    ?artwork dbo:thumbnail ?imageValue .
+  }
+}
+GROUP BY ?artwork
+ORDER BY ?artwork

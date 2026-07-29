@@ -1,0 +1,120 @@
+{
+  "metadata": {
+    "source": "DBpedia",
+    "city": "Napoli",
+    "raw_datasets": [
+      "caravaggio_artist_details.json",
+      "caravaggio_places_details.json",
+      "caravaggio_artworks_details.json"
+    ]
+  },
+  "artists": [
+    {
+      "uri": "http://dbpedia.org/resource/Caravaggio",
+      "name": "Caravaggio",
+      "normalized_name": "caravaggio",
+      "full_name": null,
+      "birth_date": "1571-09-29",
+      "death_date": "1610-07-18",
+      "birth_place": "Ducato di Milano",
+      "death_place": "Porto Ercole",
+      "description": "pittore italiano (1571-1610)",
+      "image_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Bild-Ottavio_Leoni,_Caravaggio.jpg?width=300",
+      "source": "DBpedia"
+    }
+  ],
+  "places": [
+    {
+      "uri": "http://dbpedia.org/resource/Museo_di_Capodimonte",
+      "name": "Museo nazionale di Capodimonte",
+      "normalized_name": "museo nazionale di capodimonte",
+      "city": "Napoli",
+      "place_type": null,
+      "address": null,
+      "latitude": 40.86700439453125,
+      "longitude": 14.25053310394287,
+      "description": "museo di Napoli",
+      "image_url": "http://commons.wikimedia.org/wiki/Special:FilePath/ReggiaCapodimonte.jpg?width=300",
+      "source": "DBpedia"
+    },
+    {
+      "uri": "http://dbpedia.org/resource/Palazzo_Zevallos_Stigliano",
+      "name": "Palazzo Zevallos",
+      "normalized_name": "palazzo zevallos",
+      "city": "Napoli",
+      "place_type": null,
+      "address": null,
+      "latitude": 40.83969879150391,
+      "longitude": 14.24860000610352,
+      "description": "museo privato italiano",
+      "image_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Napoli_-_Palazzo_Colonna_di_Stigliano.jpg?width=300",
+      "source": "DBpedia"
+    },
+    {
+      "uri": "http://dbpedia.org/resource/Pio_Monte_della_Misericordia",
+      "name": "Pio Monte della Misericordia",
+      "normalized_name": "pio monte della misericordia",
+      "city": "Napoli",
+      "place_type": null,
+      "address": null,
+      "latitude": null,
+      "longitude": null,
+      "description": "museo italiano",
+      "image_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Logo_Pio_Monte_della_Misericordia_Napoli.svg?width=300",
+      "source": "DBpedia"
+    }
+  ],
+  "artworks": [
+    {
+      "uri": "http://dbpedia.org/resource/The_Flagellation_of_Christ_(Caravaggio)",
+      "title": "Flagellazione di Cristo (Caravaggio)",
+      "normalized_title": "flagellazione di cristo caravaggio",
+      "artist_uri": "http://dbpedia.org/resource/Caravaggio",
+      "artist_name": "Caravaggio",
+      "place_uri": "http://dbpedia.org/resource/Museo_di_Capodimonte",
+      "place_name": "Museo nazionale di Capodimonte",
+      "city": "Napoli",
+      "year": 1607,
+      "completion_date": null,
+      "medium": "Oil on canvas",
+      "subject": null,
+      "description": "dipinto di Caravaggio conservato nel Museo di Capodimonte di Napoli",
+      "image_url": "http://commons.wikimedia.org/wiki/Special:FilePath/The_Flagellation_of_Christ-Caravaggio_(1607).jpg?width=300",
+      "source": "DBpedia"
+    },
+    {
+      "uri": "http://dbpedia.org/resource/The_Martyrdom_of_Saint_Ursula_(Caravaggio)",
+      "title": "Martirio di sant'Orsola",
+      "normalized_title": "martirio di sant orsola",
+      "artist_uri": "http://dbpedia.org/resource/Caravaggio",
+      "artist_name": "Caravaggio",
+      "place_uri": "http://dbpedia.org/resource/Palazzo_Zevallos_Stigliano",
+      "place_name": "Palazzo Zevallos",
+      "city": "Napoli",
+      "year": 1610,
+      "completion_date": null,
+      "medium": "Pittura a olio",
+      "subject": null,
+      "description": "dipinto di Caravaggio",
+      "image_url": "http://commons.wikimedia.org/wiki/Special:FilePath/CaravaggioUrsula.jpg?width=300",
+      "source": "DBpedia"
+    },
+    {
+      "uri": "http://dbpedia.org/resource/The_Seven_Works_of_Mercy_(Caravaggio)",
+      "title": "Sette opere di Misericordia",
+      "normalized_title": "sette opere di misericordia",
+      "artist_uri": "http://dbpedia.org/resource/Caravaggio",
+      "artist_name": "Caravaggio",
+      "place_uri": "http://dbpedia.org/resource/Pio_Monte_della_Misericordia",
+      "place_name": "Pio Monte della Misericordia",
+      "city": "Napoli",
+      "year": 1607,
+      "completion_date": null,
+      "medium": "Oil on canvas",
+      "subject": null,
+      "description": "dipinto di Caravaggio",
+      "image_url": "http://commons.wikimedia.org/wiki/Special:FilePath/Caravaggio_-_Sette_opere_di_Misericordia.jpg?width=300",
+      "source": "DBpedia"
+    }
+  ]
+}

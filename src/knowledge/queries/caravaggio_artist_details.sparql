@@ -1,0 +1,88 @@
+PREFIX dbr: <http://dbpedia.org/resource/>
+PREFIX dbo: <http://dbpedia.org/ontology/>
+PREFIX dbp: <http://dbpedia.org/property/>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT
+  ?artist
+  (SAMPLE(?nameValue) AS ?name)
+  (SAMPLE(?fullNameValue) AS ?fullName)
+  (SAMPLE(?birthDateValue) AS ?birthDate)
+  (SAMPLE(?deathDateValue) AS ?deathDate)
+  (SAMPLE(?birthPlaceNameValue) AS ?birthPlace)
+  (SAMPLE(?deathPlaceNameValue) AS ?deathPlace)
+  (SAMPLE(?descriptionValue) AS ?description)
+  (SAMPLE(?imageValue) AS ?image)
+WHERE {
+  BIND(dbr:Caravaggio AS ?artist)
+
+  OPTIONAL {
+    ?artist rdfs:label ?nameValue .
+    FILTER(LANG(?nameValue) = "it")
+  }
+
+  OPTIONAL {
+    ?artist foaf:name ?fullNameValue .
+    FILTER(
+      LANG(?fullNameValue) = "it" ||
+      LANG(?fullNameValue) = ""
+    )
+  }
+
+  OPTIONAL {
+    ?artist dbo:birthDate ?birthDateValue .
+  }
+
+  OPTIONAL {
+    ?artist dbo:deathDate ?deathDateValue .
+  }
+
+  OPTIONAL {
+    ?artist dbo:birthPlace ?birthPlaceResource .
+
+    OPTIONAL {
+      ?birthPlaceResource rdfs:label ?birthPlaceNameIt .
+      FILTER(LANG(?birthPlaceNameIt) = "it")
+    }
+
+    OPTIONAL {
+      ?birthPlaceResource rdfs:label ?birthPlaceNameEn .
+      FILTER(LANG(?birthPlaceNameEn) = "en")
+    }
+
+    BIND(
+      COALESCE(?birthPlaceNameIt, ?birthPlaceNameEn)
+      AS ?birthPlaceNameValue
+    )
+  }
+
+  OPTIONAL {
+    ?artist dbo:deathPlace ?deathPlaceResource .
+
+    OPTIONAL {
+      ?deathPlaceResource rdfs:label ?deathPlaceNameIt .
+      FILTER(LANG(?deathPlaceNameIt) = "it")
+    }
+
+    OPTIONAL {
+      ?deathPlaceResource rdfs:label ?deathPlaceNameEn .
+      FILTER(LANG(?deathPlaceNameEn) = "en")
+    }
+
+    BIND(
+      COALESCE(?deathPlaceNameIt, ?deathPlaceNameEn)
+      AS ?deathPlaceNameValue
+    )
+  }
+
+  OPTIONAL {
+    ?artist dbo:description ?descriptionValue .
+    FILTER(LANG(?descriptionValue) = "it")
+  }
+
+  OPTIONAL {
+    ?artist dbo:thumbnail ?imageValue .
+  }
+}
+GROUP BY ?artist
