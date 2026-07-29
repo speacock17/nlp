@@ -1,2 +1,5 @@
 neo4j==6.2.0
 python-dotenv==1.2.2
+SpeechRecognition==3.17.0
+PyAudio==0.2.14
+pyttsx3==2.99
