@@ -1,0 +1,239 @@
+import unittest
+
+from src.llm.grounded_answer_renderer import (
+    GroundedAnswerRenderer,
+)
+from src.llm.ollama_llm_client import LLMToolCall
+from src.llm.tool_calling_agent import ToolExecution
+
+
+class GroundedAnswerRendererTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.renderer = GroundedAnswerRenderer()
+
+    def test_renders_artworks_with_their_real_places(
+        self,
+    ) -> None:
+        execution = ToolExecution(
+            tool_call=LLMToolCall(
+                name="list_artworks_by_artist",
+                arguments={
+                    "artist_name": "Caravaggio",
+                    "city": "Napoli",
+                },
+            ),
+            result={
+                "count": 3,
+                "data": [
+                    {
+                        "title": "Flagellazione di Cristo",
+                        "artist_name": "Caravaggio",
+                        "place_name": (
+                            "Museo nazionale di Capodimonte"
+                        ),
+                        "city": "Napoli",
+                        "year": 1607,
+                    },
+                    {
+                        "title": (
+                            "Sette opere di Misericordia"
+                        ),
+                        "artist_name": "Caravaggio",
+                        "place_name": (
+                            "Pio Monte della Misericordia"
+                        ),
+                        "city": "Napoli",
+                        "year": 1607,
+                    },
+                    {
+                        "title": (
+                            "Martirio di sant'Orsola"
+                        ),
+                        "artist_name": "Caravaggio",
+                        "place_name": "Palazzo Zevallos",
+                        "city": "Napoli",
+                        "year": 1610,
+                    },
+                ],
+            },
+        )
+
+        answer = self.renderer.render([execution])
+
+        self.assertIn(
+            "Flagellazione di Cristo",
+            answer,
+        )
+        self.assertIn(
+            "Museo nazionale di Capodimonte",
+            answer,
+        )
+        self.assertIn(
+            "Sette opere di Misericordia",
+            answer,
+        )
+        self.assertIn(
+            "Pio Monte della Misericordia",
+            answer,
+        )
+        self.assertIn(
+            "Martirio di sant'Orsola",
+            answer,
+        )
+        self.assertIn(
+            "Palazzo Zevallos",
+            answer,
+        )
+
+    def test_does_not_assign_all_artworks_to_one_place(
+        self,
+    ) -> None:
+        execution = ToolExecution(
+            tool_call=LLMToolCall(
+                name="list_artworks_by_artist",
+                arguments={
+                    "artist_name": "Caravaggio",
+                    "city": "Napoli",
+                },
+            ),
+            result={
+                "count": 2,
+                "data": [
+                    {
+                        "title": "Opera A",
+                        "place_name": "Luogo A",
+                    },
+                    {
+                        "title": "Opera B",
+                        "place_name": "Luogo B",
+                    },
+                ],
+            },
+        )
+
+        answer = self.renderer.render([execution])
+
+        self.assertIn("Opera A si trova presso Luogo A", answer)
+        self.assertIn("Opera B si trova presso Luogo B", answer)
+        self.assertNotIn(
+            "Opera A e Opera B si trovano presso Luogo A",
+            answer,
+        )
+
+    def test_renders_safe_not_found_answer(
+        self,
+    ) -> None:
+        execution = ToolExecution(
+            tool_call=LLMToolCall(
+                name="list_artworks_by_artist",
+                arguments={
+                    "artist_name": "Artista inesistente",
+                    "city": "Napoli",
+                },
+            ),
+            result={
+                "count": 0,
+                "data": [],
+            },
+        )
+
+        answer = self.renderer.render([execution])
+
+        self.assertEqual(
+            answer,
+            (
+                "Non ho trovato nel database opere di "
+                "Artista inesistente visitabili a Napoli."
+            ),
+        )
+
+    def test_renders_single_artwork_information(
+        self,
+    ) -> None:
+        execution = ToolExecution(
+            tool_call=LLMToolCall(
+                name="get_artwork_information",
+                arguments={
+                    "artwork_title": (
+                        "Martirio di sant'Orsola"
+                    )
+                },
+            ),
+            result={
+                "found": True,
+                "data": {
+                    "title": "Martirio di sant'Orsola",
+                    "artist_name": "Caravaggio",
+                    "place_name": "Palazzo Zevallos",
+                    "city": "Napoli",
+                    "year": 1610,
+                    "description": (
+                        "Dipinto di Caravaggio."
+                    ),
+                },
+            },
+        )
+
+        answer = self.renderer.render([execution])
+
+        self.assertIn(
+            "Martirio di sant'Orsola",
+            answer,
+        )
+        self.assertIn("Caravaggio", answer)
+        self.assertIn("Palazzo Zevallos", answer)
+        self.assertIn("1610", answer)
+
+    def test_combines_multiple_tool_results(
+        self,
+    ) -> None:
+        executions = [
+            ToolExecution(
+                tool_call=LLMToolCall(
+                    name="get_artwork_information",
+                    arguments={
+                        "artwork_title": "Flagellazione"
+                    },
+                ),
+                result={
+                    "found": True,
+                    "data": {
+                        "title": "Flagellazione di Cristo",
+                        "year": 1607,
+                    },
+                },
+            ),
+            ToolExecution(
+                tool_call=LLMToolCall(
+                    name="get_artist_information",
+                    arguments={
+                        "artist_name": "Caravaggio"
+                    },
+                ),
+                result={
+                    "found": True,
+                    "data": {
+                        "name": "Caravaggio",
+                        "full_name": (
+                            "Michelangelo Merisi"
+                        ),
+                    },
+                },
+            ),
+        ]
+
+        answer = self.renderer.render(executions)
+
+        self.assertIn(
+            "Flagellazione di Cristo",
+            answer,
+        )
+        self.assertIn("1607", answer)
+        self.assertIn(
+            "Michelangelo Merisi",
+            answer,
+        )
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,6 +1,9 @@
 import unittest
 from unittest.mock import MagicMock, call
 
+from src.llm.knowledge_tools import (
+    KNOWLEDGE_TOOL_SCHEMAS,
+)
 from src.llm.ollama_llm_client import (
     LLMResponse,
     LLMToolCall,
@@ -14,45 +17,31 @@ class ToolCallingAgentTest(unittest.TestCase):
     def setUp(self) -> None:
         self.llm_client = MagicMock()
         self.tool_executor = MagicMock()
-        self.tool_schemas = [
-            {
-                "type": "function",
-                "function": {
-                    "name": "list_artworks_by_artist"
-                },
-            }
-        ]
+        self.answer_renderer = MagicMock()
+        self.tool_schemas = KNOWLEDGE_TOOL_SCHEMAS
 
         self.agent = ToolCallingAgent(
             llm_client=self.llm_client,
             tool_executor=self.tool_executor,
             tool_schemas=self.tool_schemas,
+            answer_renderer=self.answer_renderer,
         )
 
-    def test_executes_tool_and_generates_final_answer(
+    def test_executes_tool_and_renders_grounded_answer(
         self,
     ) -> None:
-        self.llm_client.chat.side_effect = [
-            LLMResponse(
-                content="",
-                tool_calls=[
-                    LLMToolCall(
-                        name="list_artworks_by_artist",
-                        arguments={
-                            "artist_name": "Caravaggio",
-                            "city": "Napoli",
-                        },
-                    )
-                ],
-            ),
-            LLMResponse(
-                content=(
-                    "A Napoli puoi vedere tre opere "
-                    "di Caravaggio."
-                ),
-                tool_calls=[],
-            ),
-        ]
+        self.llm_client.chat.return_value = LLMResponse(
+            content="",
+            tool_calls=[
+                LLMToolCall(
+                    name="list_artworks_by_artist",
+                    arguments={
+                        "artist_name": "Caravaggio",
+                        "city": "Napoli",
+                    },
+                )
+            ],
+        )
 
         tool_result = {
             "count": 3,
@@ -64,6 +53,10 @@ class ToolCallingAgentTest(unittest.TestCase):
         }
         self.tool_executor.execute.return_value = (
             tool_result
+        )
+        self.answer_renderer.render.return_value = (
+            "A Napoli puoi vedere tre opere "
+            "di Caravaggio."
         )
 
         result = self.agent.run(
@@ -78,6 +71,9 @@ class ToolCallingAgentTest(unittest.TestCase):
                 "city": "Napoli",
             },
         )
+        self.answer_renderer.render.assert_called_once_with(
+            result.executions
+        )
         self.assertEqual(
             result.content,
             (
@@ -90,34 +86,28 @@ class ToolCallingAgentTest(unittest.TestCase):
             1,
         )
         self.assertEqual(
-            result.executions[0].result,
-            tool_result,
+            self.llm_client.chat.call_count,
+            1,
         )
 
     def test_executes_multiple_tools(self) -> None:
-        self.llm_client.chat.side_effect = [
-            LLMResponse(
-                content="",
-                tool_calls=[
-                    LLMToolCall(
-                        name="get_artwork_information",
-                        arguments={
-                            "artwork_title": "Flagellazione"
-                        },
-                    ),
-                    LLMToolCall(
-                        name="get_artist_information",
-                        arguments={
-                            "artist_name": "Caravaggio"
-                        },
-                    ),
-                ],
-            ),
-            LLMResponse(
-                content="Risposta combinata.",
-                tool_calls=[],
-            ),
-        ]
+        self.llm_client.chat.return_value = LLMResponse(
+            content="",
+            tool_calls=[
+                LLMToolCall(
+                    name="get_artwork_information",
+                    arguments={
+                        "artwork_title": "Flagellazione"
+                    },
+                ),
+                LLMToolCall(
+                    name="get_artist_information",
+                    arguments={
+                        "artist_name": "Caravaggio"
+                    },
+                ),
+            ],
+        )
 
         self.tool_executor.execute.side_effect = [
             {"found": True, "data": {"year": 1607}},
@@ -128,6 +118,9 @@ class ToolCallingAgentTest(unittest.TestCase):
                 },
             },
         ]
+        self.answer_renderer.render.return_value = (
+            "Risposta combinata."
+        )
 
         result = self.agent.run(
             "Quando fu realizzata la Flagellazione "
@@ -159,6 +152,105 @@ class ToolCallingAgentTest(unittest.TestCase):
             result.content,
             "Risposta combinata.",
         )
+        self.assertEqual(
+            self.llm_client.chat.call_count,
+            1,
+        )
+
+    def test_recovers_tool_call_from_json_content(
+        self,
+    ) -> None:
+        self.llm_client.chat.return_value = LLMResponse(
+            content=(
+                '{"name":"list_artworks_by_artist",'
+                '"parameters":{'
+                '"artist_name":"Caravaggio",'
+                '"city":"Napoli"}}'
+            ),
+            tool_calls=[],
+        )
+        self.tool_executor.execute.return_value = {
+            "count": 1,
+            "data": [
+                {
+                    "title": (
+                        "Sette opere di Misericordia"
+                    )
+                }
+            ],
+        }
+        self.answer_renderer.render.return_value = (
+            "Nel database risulta un'opera."
+        )
+
+        result = self.agent.run(
+            "Vorrei vedere qualche quadro del Merisi."
+        )
+
+        self.tool_executor.execute.assert_called_once_with(
+            name="list_artworks_by_artist",
+            arguments={
+                "artist_name": "Caravaggio",
+                "city": "Napoli",
+            },
+        )
+        self.assertEqual(
+            result.content,
+            "Nel database risulta un'opera.",
+        )
+        self.assertEqual(
+            len(result.executions),
+            1,
+        )
+
+    def test_normalizes_tool_call_before_execution(
+        self,
+    ) -> None:
+        self.llm_client.chat.return_value = LLMResponse(
+            content="",
+            tool_calls=[
+                LLMToolCall(
+                    name="list_artworks_by_artist",
+                    arguments={
+                        "artist_name": "Merisi",
+                        "city": "Napoli",
+                    },
+                )
+            ],
+        )
+        self.tool_executor.execute.return_value = {
+            "count": 1,
+            "data": [
+                {
+                    "title": (
+                        "Sette opere di Misericordia"
+                    )
+                }
+            ],
+        }
+        self.answer_renderer.render.return_value = (
+            "Nel database risulta un'opera."
+        )
+
+        result = self.agent.run(
+            "Vorrei vedere qualche quadro "
+            "del Merisi a Napoli."
+        )
+
+        self.tool_executor.execute.assert_called_once_with(
+            name="list_artworks_by_artist",
+            arguments={
+                "artist_name": "Caravaggio",
+                "city": "Napoli",
+            },
+        )
+        self.assertEqual(
+            result.executions[0].tool_call.arguments[
+                "artist_name"
+            ],
+            "Caravaggio",
+        )
+
 
     def test_returns_direct_non_tool_response(self) -> None:
         self.llm_client.chat.return_value = LLMResponse(
@@ -185,6 +277,7 @@ class ToolCallingAgentTest(unittest.TestCase):
             [],
         )
         self.tool_executor.execute.assert_not_called()
+        self.answer_renderer.render.assert_not_called()
 
     def test_rejects_too_many_tool_calls(self) -> None:
         self.llm_client.chat.return_value = LLMResponse(

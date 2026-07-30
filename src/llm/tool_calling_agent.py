@@ -2,6 +2,9 @@ import json
 from dataclasses import dataclass, field
 from typing import Any
 
+from src.llm.domain_tool_call_normalizer import (
+    DomainToolCallNormalizer,
+)
 from src.llm.ollama_llm_client import (
     LLMResponse,
     LLMToolCall,
@@ -9,35 +12,28 @@ from src.llm.ollama_llm_client import (
 
 
 SYSTEM_PROMPT = """
-Sei un assistente dedicato esclusivamente alle opere di
-Caravaggio e Battistello Caracciolo visitabili a Napoli.
+Sei il componente di comprensione linguistica di un chatbot
+dedicato esclusivamente alle opere di Caravaggio e Battistello
+Caracciolo visitabili a Napoli.
 
-Devi comprendere richieste formulate liberamente e scegliere
+Il tuo compito ? soltanto interpretare la richiesta e scegliere
 uno o pi? tool quando servono informazioni fattuali.
 
 Regole obbligatorie:
 - il database interrogato dai tool ? l'unica fonte di verit?;
+- non rispondere usando conoscenze esterne;
 - non inventare artisti, opere, luoghi, date o descrizioni;
-- non usare conoscenze esterne;
 - puoi chiamare soltanto i tool forniti;
-- usa pi? tool quando la domanda contiene pi? richieste;
-- se la domanda ? fuori dominio, rispondi brevemente spiegando
+- usa pi? tool se la domanda contiene pi? richieste;
+- Michelangelo Merisi, Merisi e Caravaggio indicano lo stesso
+  artista: usa sempre il nome Caravaggio negli argomenti;
+- il dominio riguarda Caravaggio, Battistello Caracciolo e le
+  loro opere visitabili nell'area urbana di Napoli;
+- se la domanda ? fuori dominio, rispondi brevemente indicando
   il dominio supportato;
-- se manca un'informazione essenziale, chiedi chiarimento;
-- rispondi in italiano con una formulazione naturale e adatta
-  alla sintesi vocale.
-""".strip()
-
-
-FINAL_ANSWER_PROMPT = """
-Formula la risposta finale alla domanda dell'utente usando
-esclusivamente i risultati dei tool riportati sotto.
-
-Non aggiungere informazioni che non compaiono nei risultati.
-Se un risultato indica che il dato non ? stato trovato,
-dichiaralo chiaramente oppure chiedi un chiarimento.
-Unisci correttamente i risultati di pi? tool in una sola
-risposta naturale, breve e adatta alla sintesi vocale.
+- se manca un'informazione essenziale, chiedi un chiarimento;
+- quando ? necessario interrogare il database, restituisci una
+  chiamata tool strutturata e non una risposta fattuale libera.
 """.strip()
 
 
@@ -61,6 +57,8 @@ class ToolCallingAgent:
         llm_client,
         tool_executor,
         tool_schemas: list[dict[str, Any]],
+        answer_renderer=None,
+        tool_call_normalizer=None,
         max_tool_calls: int = 4,
     ) -> None:
         if not isinstance(max_tool_calls, int):
@@ -73,10 +71,28 @@ class ToolCallingAgent:
                 "max_tool_calls deve essere maggiore di zero"
             )
 
+        if answer_renderer is None:
+            from src.llm.grounded_answer_renderer import (
+                GroundedAnswerRenderer,
+            )
+
+            answer_renderer = GroundedAnswerRenderer()
+
         self._llm_client = llm_client
         self._tool_executor = tool_executor
         self._tool_schemas = tool_schemas
+        self._answer_renderer = answer_renderer
+        self._tool_call_normalizer = (
+            tool_call_normalizer
+            if tool_call_normalizer is not None
+            else DomainToolCallNormalizer()
+        )
         self._max_tool_calls = max_tool_calls
+        self._allowed_tool_names = (
+            self._extract_allowed_tool_names(
+                tool_schemas
+            )
+        )
 
     def run(
         self,
@@ -96,7 +112,7 @@ class ToolCallingAgent:
                 "essere vuota"
             )
 
-        initial_response = self._llm_client.chat(
+        response = self._llm_client.chat(
             messages=[
                 {
                     "role": "system",
@@ -110,51 +126,48 @@ class ToolCallingAgent:
             tools=self._tool_schemas,
         )
 
-        if not initial_response.tool_calls:
+        tool_calls = list(response.tool_calls)
+
+        if not tool_calls:
+            tool_calls = self._tool_calls_from_content(
+                response.content
+            )
+
+        if not tool_calls:
             return AgentResult(
-                content=self._require_content(
-                    initial_response
-                ),
+                content=self._require_content(response),
                 executions=[],
             )
 
-        if (
-            len(initial_response.tool_calls)
-            > self._max_tool_calls
-        ):
+        if len(tool_calls) > self._max_tool_calls:
             raise RuntimeError(
                 "Il modello ha richiesto troppi tool"
             )
 
-        executions = [
-            self._execute_tool(tool_call)
-            for tool_call in initial_response.tool_calls
+        normalized_tool_calls = [
+            self._tool_call_normalizer.normalize(
+                user_text=clean_text,
+                tool_call=tool_call,
+            )
+            for tool_call in tool_calls
         ]
 
-        final_response = self._llm_client.chat(
-            messages=[
-                {
-                    "role": "system",
-                    "content": SYSTEM_PROMPT,
-                },
-                {
-                    "role": "user",
-                    "content": clean_text,
-                },
-                {
-                    "role": "user",
-                    "content": self._build_results_message(
-                        executions
-                    ),
-                },
-            ],
-            tools=None,
+        executions = [
+            self._execute_tool(tool_call)
+            for tool_call in normalized_tool_calls
+        ]
+
+        grounded_content = self._answer_renderer.render(
+            executions
         )
 
+        if not grounded_content.strip():
+            raise RuntimeError(
+                "Il renderer non ha prodotto una risposta"
+            )
+
         return AgentResult(
-            content=self._require_content(
-                final_response
-            ),
+            content=grounded_content.strip(),
             executions=executions,
         )
 
@@ -162,6 +175,11 @@ class ToolCallingAgent:
         self,
         tool_call: LLMToolCall,
     ) -> ToolExecution:
+        if tool_call.name not in self._allowed_tool_names:
+            raise ValueError(
+                f"Tool non autorizzato: {tool_call.name}"
+            )
+
         result = self._tool_executor.execute(
             name=tool_call.name,
             arguments=tool_call.arguments,
@@ -172,30 +190,94 @@ class ToolCallingAgent:
             result=result,
         )
 
-    @staticmethod
-    def _build_results_message(
-        executions: list[ToolExecution],
-    ) -> str:
-        payload = [
-            {
-                "tool": execution.tool_call.name,
-                "arguments": (
-                    execution.tool_call.arguments
-                ),
-                "result": execution.result,
-            }
-            for execution in executions
-        ]
+    def _tool_calls_from_content(
+        self,
+        content: str,
+    ) -> list[LLMToolCall]:
+        clean_content = content.strip()
 
-        return (
-            f"{FINAL_ANSWER_PROMPT}\n\n"
-            "RISULTATI DEI TOOL:\n"
-            + json.dumps(
-                payload,
-                ensure_ascii=False,
-                indent=2,
-            )
+        if not clean_content:
+            return []
+
+        try:
+            payload = json.loads(clean_content)
+        except json.JSONDecodeError:
+            return []
+
+        raw_calls = (
+            payload
+            if isinstance(payload, list)
+            else [payload]
         )
+
+        tool_calls = []
+
+        for raw_call in raw_calls:
+            if not isinstance(raw_call, dict):
+                return []
+
+            function_data = raw_call.get(
+                "function",
+                raw_call,
+            )
+
+            if not isinstance(function_data, dict):
+                return []
+
+            name = function_data.get("name")
+            arguments = function_data.get(
+                "arguments",
+                function_data.get("parameters", {}),
+            )
+
+            if (
+                not isinstance(name, str)
+                or name not in self._allowed_tool_names
+            ):
+                return []
+
+            if isinstance(arguments, str):
+                try:
+                    arguments = json.loads(arguments)
+                except json.JSONDecodeError as error:
+                    raise RuntimeError(
+                        "Gli argomenti JSON del tool "
+                        "non sono validi"
+                    ) from error
+
+            if not isinstance(arguments, dict):
+                raise TypeError(
+                    "Gli argomenti del tool devono essere "
+                    "un dizionario"
+                )
+
+            tool_calls.append(
+                LLMToolCall(
+                    name=name,
+                    arguments=arguments,
+                )
+            )
+
+        return tool_calls
+
+    @staticmethod
+    def _extract_allowed_tool_names(
+        tool_schemas: list[dict[str, Any]],
+    ) -> set[str]:
+        names = set()
+
+        for schema in tool_schemas:
+            function = schema.get("function", {})
+
+            if not isinstance(function, dict):
+                continue
+
+            name = function.get("name")
+
+            if isinstance(name, str) and name.strip():
+                names.add(name.strip())
+
+        return names
 
     @staticmethod
     def _require_content(
