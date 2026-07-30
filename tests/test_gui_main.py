@@ -12,7 +12,7 @@ class GuiMainTest(unittest.TestCase):
     @patch("gui_main.create_speech_to_text")
     @patch("gui_main.ChatbotWindow")
     @patch("gui_main.ChatbotGuiController")
-    @patch("gui_main.ChatbotService")
+    @patch("gui_main.create_chatbot_service")
     @patch("gui_main.Neo4jMemoryRepository")
     @patch("gui_main.Neo4jKnowledgeRepository")
     def test_builds_and_runs_gui(

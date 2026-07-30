@@ -11,7 +11,7 @@ class GuiSttCacheIntegrationTest(unittest.TestCase):
     @patch("gui_main.TextToSpeech")
     @patch("gui_main.create_speech_to_text")
     @patch("gui_main.ChatbotGuiController")
-    @patch("gui_main.ChatbotService")
+    @patch("gui_main.create_chatbot_service")
     @patch("gui_main.Neo4jMemoryRepository")
     @patch("gui_main.Neo4jKnowledgeRepository")
     def test_passes_cached_stt_engines_to_window(

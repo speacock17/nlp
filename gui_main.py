@@ -10,7 +10,9 @@ from src.database.neo4j_knowledge_repository import (
 from src.database.neo4j_memory_repository import (
     Neo4jMemoryRepository,
 )
-from src.dialogue.chatbot_service import ChatbotService
+from src.dialogue.chatbot_service_factory import (
+    create_chatbot_service,
+)
 from src.gui.chatbot_gui_controller import (
     ChatbotGuiController,
 )
@@ -43,7 +45,7 @@ def main() -> None:
                 "Il database Neo4j non ? raggiungibile"
             )
 
-        chatbot_service = ChatbotService(
+        chatbot_service = create_chatbot_service(
             knowledge_repository=knowledge_repository,
             memory_repository=memory_repository,
         )

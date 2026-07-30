@@ -12,7 +12,7 @@ class MainTest(unittest.TestCase):
     @patch("main.getenv")
     @patch("main.load_dotenv")
     @patch("main.VoiceChatbotApp")
-    @patch("main.ChatbotService")
+    @patch("main.create_chatbot_service")
     @patch("main.Neo4jMemoryRepository")
     @patch("main.Neo4jKnowledgeRepository")
     def test_builds_and_runs_voice_chatbot(
@@ -83,7 +83,7 @@ class MainTest(unittest.TestCase):
     @patch("main.TextToSpeech")
     @patch("main.create_speech_to_text")
     @patch("main.VoiceChatbotApp")
-    @patch("main.ChatbotService")
+    @patch("main.create_chatbot_service")
     @patch("main.Neo4jMemoryRepository")
     @patch("main.Neo4jKnowledgeRepository")
     def test_closes_repositories_when_database_is_unhealthy(
