@@ -167,6 +167,7 @@ class GroundedAnswerRendererTest(unittest.TestCase):
                     "place_name": "Palazzo Zevallos",
                     "city": "Napoli",
                     "year": 1610,
+                    "medium": "Pittura a olio",
                     "description": (
                         "Dipinto di Caravaggio."
                     ),
@@ -183,6 +184,19 @@ class GroundedAnswerRendererTest(unittest.TestCase):
         self.assertIn("Caravaggio", answer)
         self.assertIn("Palazzo Zevallos", answer)
         self.assertIn("1610", answer)
+        self.assertIn(
+            "\u00e8 attribuita a Caravaggio",
+            answer,
+        )
+        self.assertIn(
+            "\u00e8 datata 1610",
+            answer,
+        )
+        self.assertIn(
+            "la tecnica indicata \u00e8 Pittura a olio",
+            answer,
+        )
+        self.assertNotIn("?", answer)
 
     def test_combines_multiple_tool_results(
         self,

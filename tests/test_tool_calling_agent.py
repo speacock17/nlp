@@ -203,6 +203,48 @@ class ToolCallingAgentTest(unittest.TestCase):
             1,
         )
 
+    def test_recovers_tool_call_with_escaped_apostrophe(
+        self,
+    ) -> None:
+        self.llm_client.chat.return_value = LLMResponse(
+            content=(
+                "{\"name\":\"get_artwork_information\","
+                "\"parameters\":{\"artwork_title\":"
+                "\"Martirio di sant\\'Orsola\"}}"
+            ),
+            tool_calls=[],
+        )
+        self.tool_executor.execute.return_value = {
+            "found": True,
+            "data": {
+                "title": "Martirio di sant'Orsola",
+            },
+        }
+        self.answer_renderer.render.return_value = (
+            "Informazioni sul Martirio di sant'Orsola."
+        )
+
+        result = self.agent.run(
+            "Parlami del Martirio di sant'Orsola."
+        )
+
+        self.tool_executor.execute.assert_called_once_with(
+            name="get_artwork_information",
+            arguments={
+                "artwork_title": (
+                    "Martirio di sant'Orsola"
+                ),
+            },
+        )
+        self.assertEqual(
+            result.content,
+            "Informazioni sul Martirio di sant'Orsola.",
+        )
+        self.assertEqual(
+            len(result.executions),
+            1,
+        )
+
     def test_normalizes_tool_call_before_execution(
         self,
     ) -> None:

@@ -200,7 +200,9 @@ class ToolCallingAgent:
             return []
 
         try:
-            payload = json.loads(clean_content)
+            payload = self._load_json_with_repairs(
+                clean_content
+            )
         except json.JSONDecodeError:
             return []
 
@@ -238,7 +240,9 @@ class ToolCallingAgent:
 
             if isinstance(arguments, str):
                 try:
-                    arguments = json.loads(arguments)
+                    arguments = self._load_json_with_repairs(
+                        arguments
+                    )
                 except json.JSONDecodeError as error:
                     raise RuntimeError(
                         "Gli argomenti JSON del tool "
@@ -259,6 +263,26 @@ class ToolCallingAgent:
             )
 
         return tool_calls
+
+    @staticmethod
+    def _load_json_with_repairs(
+        content: str,
+    ) -> Any:
+        try:
+            return json.loads(content)
+        except json.JSONDecodeError as original_error:
+            repaired_content = content.replace(
+                "\\'",
+                "'",
+            )
+
+            if repaired_content == content:
+                raise
+
+            try:
+                return json.loads(repaired_content)
+            except json.JSONDecodeError:
+                raise original_error
 
     @staticmethod
     def _extract_allowed_tool_names(

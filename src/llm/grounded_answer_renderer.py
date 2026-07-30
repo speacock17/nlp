@@ -207,7 +207,7 @@ class GroundedAnswerRenderer:
 
         if artist_name:
             facts.append(
-                f"? attribuita a {artist_name}"
+                f"\u00e8 attribuita a {artist_name}"
             )
 
         if place_name:
@@ -222,7 +222,7 @@ class GroundedAnswerRenderer:
 
         if year is not None:
             facts.append(
-                f"? datata {year}"
+                f"\u00e8 datata {year}"
             )
         elif completion_date:
             facts.append(
@@ -232,7 +232,7 @@ class GroundedAnswerRenderer:
 
         if medium:
             facts.append(
-                f"la tecnica indicata ? {medium}"
+                f"la tecnica indicata \u00e8 {medium}"
             )
 
         if description:
@@ -240,7 +240,7 @@ class GroundedAnswerRenderer:
 
         if not facts:
             return (
-                f"Nel database ? presente {title}, "
+                f"Nel database \u00e8 presente {title}, "
                 f"ma non risultano altri dettagli."
             )
 
@@ -295,7 +295,7 @@ class GroundedAnswerRenderer:
 
         if full_name and full_name != name:
             facts.append(
-                f"il nome completo ? {full_name}"
+                f"il nome completo \u00e8 {full_name}"
             )
 
         if birth_date:
@@ -311,7 +311,7 @@ class GroundedAnswerRenderer:
             )
 
         if death_date:
-            death_fact = f"mor? il {death_date}"
+            death_fact = f"mor\u00ec il {death_date}"
 
             if death_place:
                 death_fact += f" a {death_place}"
@@ -319,7 +319,7 @@ class GroundedAnswerRenderer:
             facts.append(death_fact)
         elif death_place:
             facts.append(
-                f"mor? a {death_place}"
+                f"mor\u00ec a {death_place}"
             )
 
         if description:
@@ -327,7 +327,7 @@ class GroundedAnswerRenderer:
 
         if not facts:
             return (
-                f"Nel database ? presente {name}, "
+                f"Nel database \u00e8 presente {name}, "
                 f"ma non risultano altri dettagli."
             )
 
@@ -376,7 +376,7 @@ class GroundedAnswerRenderer:
 
         if place_type:
             facts.append(
-                f"? indicato come {place_type}"
+                f"\u00e8 indicato come {place_type}"
             )
 
         if city:
@@ -386,7 +386,7 @@ class GroundedAnswerRenderer:
 
         if address:
             facts.append(
-                f"l'indirizzo ? {address}"
+                f"l'indirizzo \u00e8 {address}"
             )
 
         if description:
@@ -394,7 +394,7 @@ class GroundedAnswerRenderer:
 
         if not facts:
             return (
-                f"Nel database ? presente {name}, "
+                f"Nel database \u00e8 presente {name}, "
                 f"ma non risultano altri dettagli."
             )
 
