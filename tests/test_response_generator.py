@@ -101,6 +101,48 @@ class ResponseGeneratorTest(unittest.TestCase):
         self.assertEqual(len(response.artworks), 1)
         self.assertTrue(response.text)
 
+    def test_compares_two_artists(self) -> None:
+        response = self._generate(
+            "Confronta Caravaggio e Battistello Caracciolo"
+        )
+
+        self.assertEqual(
+            response.intent,
+            Intent.COMPARE_ARTISTS,
+        )
+        self.assertEqual(len(response.artists), 2)
+        self.assertEqual(len(response.artworks), 11)
+        self.assertIn(
+            "Caravaggio ha 3 opere",
+            response.text,
+        )
+        self.assertIn(
+            "Battistello Caracciolo ne ha 8",
+            response.text,
+        )
+        self.assertFalse(
+            response.needs_clarification
+        )
+
+    def test_compare_artists_requires_two_artists(
+        self,
+    ) -> None:
+        response = self._generate(
+            "Confronta Caravaggio"
+        )
+
+        self.assertEqual(
+            response.intent,
+            Intent.COMPARE_ARTISTS,
+        )
+        self.assertTrue(
+            response.needs_clarification
+        )
+        self.assertIn(
+            "Quali due artisti",
+            response.text,
+        )
+
     def test_returns_inconsistency_message(self) -> None:
         nlu_result = self.pipeline.analyze(
             "Il Martirio di sant'Orsola è di "
