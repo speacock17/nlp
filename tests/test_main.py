@@ -1,4 +1,4 @@
-﻿import unittest
+import unittest
 from unittest.mock import MagicMock, patch
 from uuid import UUID
 
@@ -8,7 +8,9 @@ import main as app_main
 class MainTest(unittest.TestCase):
     @patch("main.uuid4")
     @patch("main.TextToSpeech")
-    @patch("main.SpeechToText")
+    @patch("main.create_speech_to_text")
+    @patch("main.getenv")
+    @patch("main.load_dotenv")
     @patch("main.VoiceChatbotApp")
     @patch("main.ChatbotService")
     @patch("main.Neo4jMemoryRepository")
@@ -19,7 +21,9 @@ class MainTest(unittest.TestCase):
         memory_repository_class,
         chatbot_service_class,
         voice_app_class,
-        speech_to_text_class,
+        load_dotenv_mock,
+        getenv_mock,
+        create_speech_to_text_mock,
         text_to_speech_class,
         uuid4_mock,
     ) -> None:
@@ -39,9 +43,12 @@ class MainTest(unittest.TestCase):
             memory_repository
         )
         chatbot_service_class.return_value = chatbot_service
-        speech_to_text_class.return_value = speech_to_text
+        create_speech_to_text_mock.return_value = (
+            speech_to_text
+        )
         text_to_speech_class.return_value = text_to_speech
         voice_app_class.return_value = voice_app
+        getenv_mock.return_value = "whisper"
 
         uuid4_mock.return_value = UUID(
             "00000000-0000-0000-0000-000000000001"
@@ -49,6 +56,14 @@ class MainTest(unittest.TestCase):
 
         app_main.main()
 
+        load_dotenv_mock.assert_called_once_with()
+        getenv_mock.assert_called_once_with(
+            "STT_ENGINE",
+            "whisper",
+        )
+        create_speech_to_text_mock.assert_called_once_with(
+            "whisper"
+        )
         chatbot_service_class.assert_called_once_with(
             knowledge_repository=knowledge_repository,
             memory_repository=memory_repository,
@@ -66,7 +81,7 @@ class MainTest(unittest.TestCase):
         memory_repository.close.assert_called_once_with()
 
     @patch("main.TextToSpeech")
-    @patch("main.SpeechToText")
+    @patch("main.create_speech_to_text")
     @patch("main.VoiceChatbotApp")
     @patch("main.ChatbotService")
     @patch("main.Neo4jMemoryRepository")
@@ -77,7 +92,7 @@ class MainTest(unittest.TestCase):
         memory_repository_class,
         chatbot_service_class,
         voice_app_class,
-        speech_to_text_class,
+        create_speech_to_text_mock,
         text_to_speech_class,
     ) -> None:
         knowledge_repository = MagicMock()
@@ -97,7 +112,7 @@ class MainTest(unittest.TestCase):
 
         chatbot_service_class.assert_not_called()
         voice_app_class.assert_not_called()
-        speech_to_text_class.assert_not_called()
+        create_speech_to_text_mock.assert_not_called()
         text_to_speech_class.assert_not_called()
         knowledge_repository.close.assert_called_once_with()
         memory_repository.close.assert_called_once_with()

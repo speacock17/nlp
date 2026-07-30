@@ -1,4 +1,7 @@
+from os import getenv
 from uuid import uuid4
+
+from dotenv import load_dotenv
 
 from src.app import VoiceChatbotApp
 from src.database.neo4j_knowledge_repository import (
@@ -8,7 +11,9 @@ from src.database.neo4j_memory_repository import (
     Neo4jMemoryRepository,
 )
 from src.dialogue.chatbot_service import ChatbotService
-from src.speech.speech_to_text import SpeechToText
+from src.speech.speech_to_text_factory import (
+    create_speech_to_text,
+)
 from src.speech.text_to_speech import TextToSpeech
 
 
@@ -17,6 +22,8 @@ def main() -> None:
     memory_repository = None
 
     try:
+        load_dotenv()
+
         knowledge_repository = (
             Neo4jKnowledgeRepository.from_env()
         )
@@ -34,9 +41,16 @@ def main() -> None:
             memory_repository=memory_repository,
         )
 
+        stt_engine = getenv(
+            "STT_ENGINE",
+            "whisper",
+        )
+
         app = VoiceChatbotApp(
             chatbot_service=chatbot_service,
-            speech_to_text=SpeechToText(),
+            speech_to_text=create_speech_to_text(
+                stt_engine
+            ),
             text_to_speech=TextToSpeech(),
             session_id=str(uuid4()),
         )
