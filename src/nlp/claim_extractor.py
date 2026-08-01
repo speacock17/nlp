@@ -70,6 +70,52 @@ class ClaimExtractor:
             for expression in expressions
         )
 
+    @staticmethod
+    def _has_author_relation(
+        text: str,
+        artwork: EntityMention,
+        artist: EntityMention,
+    ) -> bool:
+        artwork_names = {
+            normalize_text(artwork.text),
+            normalize_text(
+                artwork.canonical_name or ""
+            ),
+        }
+        artist_names = {
+            normalize_text(artist.text),
+            normalize_text(
+                artist.canonical_name or ""
+            ),
+        }
+
+        artwork_names.discard("")
+        artist_names.discard("")
+
+        connectors = (
+            "di",
+            "dipinta da",
+            "dipinto da",
+            "realizzata da",
+            "realizzato da",
+            "attribuita a",
+            "attribuito a",
+        )
+
+        for artwork_name in artwork_names:
+            for artist_name in artist_names:
+                for connector in connectors:
+                    pattern = (
+                        rf"\b{re.escape(artwork_name)}"
+                        rf"\s+{re.escape(connector)}\s+"
+                        rf"{re.escape(artist_name)}\b"
+                    )
+
+                    if re.search(pattern, text):
+                        return True
+
+        return False
+
     def extract(
         self,
         text: str,
@@ -104,9 +150,16 @@ class ClaimExtractor:
             artist is not None
             and artist.canonical_name is not None
             and not is_author_question
-            and self._contains_any(
-                normalized_text,
-                self._AUTHOR_ASSERTIONS,
+            and (
+                self._contains_any(
+                    normalized_text,
+                    self._AUTHOR_ASSERTIONS,
+                )
+                or self._has_author_relation(
+                    normalized_text,
+                    artwork,
+                    artist,
+                )
             )
         ):
             claims.append(

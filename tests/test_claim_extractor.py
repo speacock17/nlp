@@ -1,6 +1,10 @@
 ﻿import unittest
 
-from src.core.enums import ClaimType
+from src.core.enums import (
+    ClaimType,
+    EntityType,
+)
+from src.core.models import EntityMention
 from src.database.mock_knowledge_repository import (
     MockKnowledgeRepository,
 )
@@ -84,6 +88,48 @@ class ClaimExtractorTest(unittest.TestCase):
         self.assertEqual(
             claims[0].claimed_value,
             "Caravaggio",
+        )
+
+    def test_extracts_author_claim_from_generic_relation(
+        self,
+    ) -> None:
+        entities = [
+            EntityMention(
+                entity_type=EntityType.ARTWORK,
+                text="Opera di prova",
+                canonical_name="Opera di prova",
+                uri="artwork:test",
+                confidence=1.0,
+            ),
+            EntityMention(
+                entity_type=EntityType.ARTIST,
+                text="Artista di prova",
+                canonical_name="Artista di prova",
+                uri="artist:test",
+                confidence=1.0,
+            ),
+        ]
+
+        claims = self.extractor.extract(
+            (
+                "Quando \u00e8 stata realizzata "
+                "Opera di prova di Artista di prova?"
+            ),
+            entities,
+        )
+
+        self.assertEqual(len(claims), 1)
+        self.assertEqual(
+            claims[0].claim_type,
+            ClaimType.ARTWORK_AUTHOR,
+        )
+        self.assertEqual(
+            claims[0].subject_uri,
+            "artwork:test",
+        )
+        self.assertEqual(
+            claims[0].claimed_value,
+            "Artista di prova",
         )
 
     def test_question_without_artwork_has_no_claim(

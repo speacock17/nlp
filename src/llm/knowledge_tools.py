@@ -203,6 +203,18 @@ class KnowledgeToolExecutor:
             .get_artwork_by_title(artwork_title)
         )
 
+        if artwork is None:
+            candidates = (
+                self._knowledge_repository
+                .search_artworks(
+                    artwork_title,
+                    2,
+                )
+            )
+
+            if len(candidates) == 1:
+                artwork = candidates[0]
+
         return self._single_result(artwork)
 
     def _list_artworks_by_artist(

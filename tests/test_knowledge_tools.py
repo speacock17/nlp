@@ -70,6 +70,52 @@ class KnowledgeToolExecutorTest(unittest.TestCase):
             "Palazzo Zevallos",
         )
 
+    def test_gets_artwork_information_from_unique_search(
+        self,
+    ) -> None:
+        artwork = Artwork(
+            uri="artwork:flagellation",
+            title="Flagellazione di Cristo (Caravaggio)",
+            normalized_title=(
+                "flagellazione di cristo caravaggio"
+            ),
+            artist_uri="artist:caravaggio",
+            artist_name="Caravaggio",
+            place_name=(
+                "Museo nazionale di Capodimonte"
+            ),
+            city="Napoli",
+            year=1607,
+        )
+        self.repository.get_artwork_by_title.return_value = None
+        self.repository.search_artworks.return_value = [
+            artwork
+        ]
+
+        result = self.executor.execute(
+            name="get_artwork_information",
+            arguments={
+                "artwork_title": "Flagellazione di Cristo"
+            },
+        )
+
+        self.repository.get_artwork_by_title.assert_called_once_with(
+            "Flagellazione di Cristo"
+        )
+        self.repository.search_artworks.assert_called_once_with(
+            "Flagellazione di Cristo",
+            2,
+        )
+        self.assertTrue(result["found"])
+        self.assertEqual(
+            result["data"]["title"],
+            "Flagellazione di Cristo (Caravaggio)",
+        )
+        self.assertEqual(
+            result["data"]["place_name"],
+            "Museo nazionale di Capodimonte",
+        )
+
     def test_lists_artworks_by_artist(self) -> None:
         artwork = Artwork(
             uri="artwork:1",

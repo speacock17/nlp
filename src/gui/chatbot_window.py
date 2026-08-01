@@ -51,7 +51,7 @@ class ChatbotWindow:
 
     def _configure_window(self) -> None:
         self._root.title(
-            "Chatbot Caravaggio e Battistello"
+            "Chatbot NLP"
         )
         self._root.geometry("760x560")
         self._root.minsize(620, 450)

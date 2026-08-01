@@ -148,6 +148,37 @@ class HybridChatbotServiceTest(unittest.TestCase):
         )
         self.assertEqual(state.turn_index, 1)
 
+    def test_detects_wrong_author_inside_date_question(
+        self,
+    ) -> None:
+        response = self.service.process(
+            session_id="session-1",
+            text=(
+                "Quando \u00e8 stato realizzato il "
+                "Martirio di sant'Orsola di "
+                "Battistello Caracciolo?"
+            ),
+        )
+
+        self.assertIsNotNone(
+            response.inconsistency
+        )
+        self.assertEqual(
+            response.inconsistency
+            .inconsistency_type,
+            InconsistencyType.WRONG_AUTHOR,
+        )
+        self.assertIn(
+            "Caravaggio",
+            response.text,
+        )
+        self.agent.run.assert_not_called()
+
+        state = self.memory_repository.load_state(
+            "session-1"
+        )
+        self.assertEqual(state.turn_index, 1)
+
     def test_passes_resolved_context_to_agent(
         self,
     ) -> None:
