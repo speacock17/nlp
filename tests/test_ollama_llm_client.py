@@ -16,6 +16,66 @@ class OllamaLLMClientTest(unittest.TestCase):
             chat_function=self.chat_function,
         )
 
+    def test_uses_qwen_as_default_model(self) -> None:
+        client = OllamaLLMClient(
+            chat_function=self.chat_function,
+        )
+
+        response = MagicMock()
+        response.message.content = "Risposta di prova."
+        response.message.tool_calls = None
+        self.chat_function.return_value = response
+
+        client.chat(
+            messages=[
+                {
+                    "role": "user",
+                    "content": "Domanda di prova",
+                }
+            ]
+        )
+
+        self.chat_function.assert_called_once_with(
+            model="qwen3:8b",
+            messages=[
+                {
+                    "role": "user",
+                    "content": "Domanda di prova",
+                }
+            ],
+            tools=None,
+        )
+
+    def test_uses_qwen_as_default_model(self) -> None:
+        client = OllamaLLMClient(
+            chat_function=self.chat_function,
+        )
+
+        response = MagicMock()
+        response.message.content = "Risposta di prova."
+        response.message.tool_calls = None
+        self.chat_function.return_value = response
+
+        client.chat(
+            messages=[
+                {
+                    "role": "user",
+                    "content": "Domanda di prova",
+                }
+            ]
+        )
+
+        self.chat_function.assert_called_once_with(
+            model="qwen3:8b",
+            messages=[
+                {
+                    "role": "user",
+                    "content": "Domanda di prova",
+                }
+            ],
+            tools=None,
+        )
+
     def test_returns_text_response(self) -> None:
         response = MagicMock()
         response.message.content = (

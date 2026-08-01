@@ -62,6 +62,38 @@ class ChatbotServiceFactoryTest(unittest.TestCase):
             HybridChatbotService,
         )
 
+    @patch(
+        "src.dialogue.chatbot_service_factory."
+        "OllamaLLMClient"
+    )
+    def test_uses_qwen_as_default_model(
+        self,
+        mocked_client_class,
+    ) -> None:
+        with patch.dict(
+            "os.environ",
+            {
+                "LLM_ENABLED": "true",
+                "OLLAMA_MODEL": "",
+            },
+            clear=False,
+        ):
+            del __import__("os").environ["OLLAMA_MODEL"]
+
+            create_chatbot_service(
+                knowledge_repository=(
+                    self.knowledge_repository
+                ),
+                memory_repository=(
+                    self.memory_repository
+                ),
+                llm_enabled=True,
+            )
+
+        mocked_client_class.assert_called_once_with(
+            model="qwen3:8b",
+        )
+
     @patch.dict(
         "os.environ",
         {"LLM_ENABLED": "true"},

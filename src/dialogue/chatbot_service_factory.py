@@ -48,7 +48,7 @@ def create_chatbot_service(
         else OllamaLLMClient(
             model=getenv(
                 "OLLAMA_MODEL",
-                "llama3.2:3b",
+                "qwen3:8b",
             )
         )
     )

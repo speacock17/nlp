@@ -24,7 +24,7 @@ class LLMResponse:
 class OllamaLLMClient:
     def __init__(
         self,
-        model: str = "llama3.2:3b",
+        model: str = "qwen3:8b",
         chat_function: Callable[..., Any] = chat,
     ) -> None:
         if not isinstance(model, str):

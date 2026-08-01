@@ -57,12 +57,12 @@ Inserire nel file `.env` i dati di Neo4j:
 
 Scaricare il modello:
 
-    ollama pull llama3.2:3b
+    ollama pull qwen3:8b
 
 Configurare nel file `.env`:
 
     LLM_ENABLED=true
-    OLLAMA_MODEL=llama3.2:3b
+    OLLAMA_MODEL=qwen3:8b
 
 Per disattivare l'LLM:
 
@@ -123,7 +123,7 @@ Eseguire l'intera suite:
 
 Stato verificato:
 
-    252 test superati
+    260 test superati
     10 subtest superati
     0 fallimenti
 
