@@ -1,4 +1,4 @@
-﻿import unittest
+import unittest
 
 from src.core.enums import Intent
 from src.nlp.intent_classifier import classify_intent
@@ -27,6 +27,21 @@ class IntentClassifierTest(unittest.TestCase):
             "dove si trova il martirio di sant orsola",
             Intent.ARTWORK_LOCATION,
         )
+
+    def test_artwork_location_follow_up_variants(self) -> None:
+        questions = (
+            "Dov'è situata?",
+            "Dov'è situato?",
+            "Dov'è conservata?",
+            "Dov'è conservato?",
+        )
+
+        for question in questions:
+            with self.subTest(question=question):
+                self.assert_intent(
+                    question,
+                    Intent.ARTWORK_LOCATION,
+                )
 
     def test_artwork_author(self) -> None:
         self.assert_intent(
