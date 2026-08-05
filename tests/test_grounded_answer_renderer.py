@@ -198,6 +198,113 @@ class GroundedAnswerRendererTest(unittest.TestCase):
         )
         self.assertNotIn("?", answer)
 
+    def test_renders_only_requested_artwork_date(
+        self,
+    ) -> None:
+        execution = ToolExecution(
+            tool_call=LLMToolCall(
+                name="get_artwork_information",
+                arguments={
+                    "artwork_title": (
+                        "Martirio di sant'Orsola"
+                    ),
+                    "requested_information": "date",
+                },
+            ),
+            result={
+                "found": True,
+                "data": {
+                    "title": "Martirio di sant'Orsola",
+                    "artist_name": "Caravaggio",
+                    "place_name": "Palazzo Zevallos",
+                    "city": "Napoli",
+                    "year": 1610,
+                    "medium": "Pittura a olio",
+                    "description": (
+                        "Dipinto di Caravaggio."
+                    ),
+                },
+            },
+        )
+
+        answer = self.renderer.render([execution])
+
+        self.assertEqual(
+            answer,
+            (
+                "Martirio di sant'Orsola "
+                "\u00e8 stato realizzato nel 1610."
+            ),
+        )
+        self.assertNotIn("Caravaggio", answer)
+        self.assertNotIn("Palazzo Zevallos", answer)
+        self.assertNotIn("Pittura a olio", answer)
+
+    def test_renders_only_requested_artwork_fields(
+        self,
+    ) -> None:
+        artwork_data = {
+            "title": "Martirio di sant'Orsola",
+            "artist_name": "Caravaggio",
+            "place_name": "Palazzo Zevallos",
+            "city": "Napoli",
+            "year": 1610,
+            "medium": "Pittura a olio",
+            "description": "Dipinto di Caravaggio.",
+        }
+
+        cases = [
+            (
+                "author",
+                (
+                    "Martirio di sant'Orsola "
+                    "\u00e8 attribuita a Caravaggio."
+                ),
+            ),
+            (
+                "location",
+                (
+                    "Martirio di sant'Orsola si trova "
+                    "presso Palazzo Zevallos, a Napoli."
+                ),
+            ),
+            (
+                "description",
+                (
+                    "Martirio di sant'Orsola: "
+                    "Dipinto di Caravaggio."
+                ),
+            ),
+        ]
+
+        for requested_information, expected in cases:
+            with self.subTest(
+                requested_information=requested_information
+            ):
+                execution = ToolExecution(
+                    tool_call=LLMToolCall(
+                        name="get_artwork_information",
+                        arguments={
+                            "artwork_title": (
+                                "Martirio di sant'Orsola"
+                            ),
+                            "requested_information": (
+                                requested_information
+                            ),
+                        },
+                    ),
+                    result={
+                        "found": True,
+                        "data": artwork_data,
+                    },
+                )
+
+                answer = self.renderer.render(
+                    [execution]
+                )
+
+                self.assertEqual(answer, expected)
+
     def test_combines_multiple_tool_results(
         self,
     ) -> None:

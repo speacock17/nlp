@@ -33,11 +33,53 @@ class ContextResolver:
         if state is None:
             return nlu_result
 
+        if (
+            not self._has_entity(
+                nlu_result,
+                EntityType.ARTWORK,
+            )
+            and self._has_entity(
+                nlu_result,
+                EntityType.ORDINAL,
+            )
+        ):
+            artwork_entity = (
+                self._ordinal_artwork_entity(
+                    nlu_result,
+                    state,
+                )
+            )
+
+            if artwork_entity is not None:
+                return self._append_entity(
+                    nlu_result,
+                    artwork_entity,
+                )
+
+            return nlu_result
+
         if nlu_result.intent == Intent.FOLLOW_UP:
             return self._resolve_follow_up(
                 nlu_result,
                 state,
             )
+
+        if (
+            nlu_result.intent == Intent.UNKNOWN
+            and not self._has_entity(
+                nlu_result,
+                EntityType.ARTWORK,
+            )
+        ):
+            artwork_entity = self._artwork_entity(
+                state.current_artwork_uri
+            )
+
+            if artwork_entity is not None:
+                return self._append_entity(
+                    nlu_result,
+                    artwork_entity,
+                )
 
         if self._requires_artwork(
             nlu_result.intent
@@ -117,6 +159,53 @@ class ContextResolver:
             )
 
         return nlu_result
+
+    def _ordinal_artwork_entity(
+        self,
+        nlu_result: NLUResult,
+        state: DialogueState,
+    ) -> EntityMention | None:
+        ordinal_entity = next(
+            (
+                entity
+                for entity in nlu_result.entities
+                if entity.entity_type
+                == EntityType.ORDINAL
+            ),
+            None,
+        )
+
+        if (
+            ordinal_entity is None
+            or ordinal_entity.canonical_name is None
+            or not state.last_result_uris
+        ):
+            return None
+
+        ordinal_value = (
+            ordinal_entity.canonical_name
+        )
+
+        if ordinal_value == "last":
+            artwork_uri = state.last_result_uris[-1]
+        else:
+            try:
+                position = int(ordinal_value)
+            except ValueError:
+                return None
+
+            if (
+                position < 1
+                or position
+                > len(state.last_result_uris)
+            ):
+                return None
+
+            artwork_uri = (
+                state.last_result_uris[position - 1]
+            )
+
+        return self._artwork_entity(artwork_uri)
 
     @staticmethod
     def _requires_artwork(

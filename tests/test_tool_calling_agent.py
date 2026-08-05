@@ -90,6 +90,62 @@ class ToolCallingAgentTest(unittest.TestCase):
             1,
         )
 
+    def test_preserves_requested_artwork_information(
+        self,
+    ) -> None:
+        self.llm_client.chat.return_value = LLMResponse(
+            content="",
+            tool_calls=[
+                LLMToolCall(
+                    name="get_artwork_information",
+                    arguments={
+                        "artwork_title": (
+                            "Martirio di sant'Orsola"
+                        ),
+                        "requested_information": "date",
+                    },
+                )
+            ],
+        )
+
+        self.tool_executor.execute.return_value = {
+            "found": True,
+            "data": {
+                "title": "Martirio di sant'Orsola",
+                "year": 1610,
+            },
+        }
+        self.answer_renderer.render.return_value = (
+            "Martirio di sant'Orsola "
+            "\u00e8 stato realizzato nel 1610."
+        )
+
+        result = self.agent.run(
+            "Quando \u00e8 stato realizzato "
+            "il Martirio di sant'Orsola?"
+        )
+
+        expected_arguments = {
+            "artwork_title": (
+                "Martirio di sant'Orsola"
+            ),
+            "requested_information": "date",
+        }
+
+        self.tool_executor.execute.assert_called_once_with(
+            name="get_artwork_information",
+            arguments=expected_arguments,
+        )
+        self.assertEqual(
+            result.executions[0]
+            .tool_call
+            .arguments,
+            expected_arguments,
+        )
+        self.answer_renderer.render.assert_called_once_with(
+            result.executions
+        )
+
     def test_executes_multiple_tools(self) -> None:
         self.llm_client.chat.return_value = LLMResponse(
             content="",

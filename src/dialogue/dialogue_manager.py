@@ -59,9 +59,16 @@ class DialogueManager:
                 response.places[0].uri
             )
 
-        state.last_result_uris = (
-            self._result_uris(response)
-        )
+        result_uris = self._result_uris(response)
+
+        if (
+            result_uris
+            and (
+                len(result_uris) > 1
+                or len(state.last_result_uris) <= 1
+            )
+        ):
+            state.last_result_uris = result_uris
 
         if response.needs_clarification:
             state.pending_clarification = response.text

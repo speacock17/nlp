@@ -132,6 +132,60 @@ class AgentResultMapperTest(unittest.TestCase):
             "Palazzo Zevallos",
         )
 
+    def test_infers_artwork_date_from_requested_information(
+        self,
+    ) -> None:
+        result = AgentResult(
+            content=(
+                "Martirio di sant'Orsola "
+                "\u00e8 stato realizzato nel 1610."
+            ),
+            executions=[
+                ToolExecution(
+                    tool_call=LLMToolCall(
+                        name="get_artwork_information",
+                        arguments={
+                            "artwork_title": (
+                                "Martirio di sant'Orsola"
+                            ),
+                            "requested_information": "date",
+                        },
+                    ),
+                    result={
+                        "found": True,
+                        "data": {
+                            "uri": "artwork:1",
+                            "title": (
+                                "Martirio di sant'Orsola"
+                            ),
+                            "normalized_title": (
+                                "martirio di sant orsola"
+                            ),
+                            "artist_uri": "artist:1",
+                            "artist_name": "Caravaggio",
+                            "place_uri": "place:1",
+                            "place_name": "Palazzo Zevallos",
+                            "city": "Napoli",
+                            "year": 1610,
+                            "completion_date": None,
+                            "medium": None,
+                            "subject": None,
+                            "description": None,
+                            "image_url": None,
+                            "source": "DBpedia",
+                        },
+                    },
+                )
+            ],
+        )
+
+        response = self.mapper.map(result)
+
+        self.assertEqual(
+            response.intent,
+            Intent.ARTWORK_DATE,
+        )
+
     def test_maps_artist_information(self) -> None:
         result = AgentResult(
             content="Caravaggio era un pittore italiano.",

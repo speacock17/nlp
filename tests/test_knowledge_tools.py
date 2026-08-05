@@ -33,6 +33,70 @@ class KnowledgeToolExecutorTest(unittest.TestCase):
             },
         )
 
+    def test_artwork_information_schema_requires_requested_information(
+        self,
+    ) -> None:
+        schema = next(
+            tool["function"]
+            for tool in KNOWLEDGE_TOOL_SCHEMAS
+            if (
+                tool["function"]["name"]
+                == "get_artwork_information"
+            )
+        )
+
+        parameters = schema["parameters"]
+        requested_information = (
+            parameters["properties"][
+                "requested_information"
+            ]
+        )
+
+        self.assertEqual(
+            requested_information["type"],
+            "string",
+        )
+        self.assertEqual(
+            requested_information["enum"],
+            [
+                "overview",
+                "author",
+                "location",
+                "date",
+                "description",
+            ],
+        )
+        self.assertIn(
+            "requested_information",
+            parameters["required"],
+        )
+
+    def test_requires_valid_requested_information(
+        self,
+    ) -> None:
+        with self.assertRaises(TypeError):
+            self.executor.execute(
+                name="get_artwork_information",
+                arguments={
+                    "artwork_title": (
+                        "Martirio di sant'Orsola"
+                    ),
+                },
+            )
+
+        with self.assertRaises(ValueError):
+            self.executor.execute(
+                name="get_artwork_information",
+                arguments={
+                    "artwork_title": (
+                        "Martirio di sant'Orsola"
+                    ),
+                    "requested_information": (
+                        "informazione_inventata"
+                    ),
+                },
+            )
+
     def test_gets_artwork_information(self) -> None:
         artwork = Artwork(
             uri="artwork:1",
@@ -53,7 +117,8 @@ class KnowledgeToolExecutorTest(unittest.TestCase):
             arguments={
                 "artwork_title": (
                     "Martirio di sant'Orsola"
-                )
+                ),
+                "requested_information": "overview",
             },
         )
 
@@ -95,7 +160,8 @@ class KnowledgeToolExecutorTest(unittest.TestCase):
         result = self.executor.execute(
             name="get_artwork_information",
             arguments={
-                "artwork_title": "Flagellazione di Cristo"
+                "artwork_title": "Flagellazione di Cristo",
+                "requested_information": "overview",
             },
         )
 
@@ -174,7 +240,10 @@ class KnowledgeToolExecutorTest(unittest.TestCase):
 
         result = self.executor.execute(
             name="get_artwork_information",
-            arguments={"artwork_title": "Opera inesistente"},
+            arguments={
+                "artwork_title": "Opera inesistente",
+                "requested_information": "overview",
+            },
         )
 
         self.assertEqual(

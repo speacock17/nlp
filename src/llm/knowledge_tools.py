@@ -4,6 +4,15 @@ from typing import Any, Callable
 from src.core.interfaces import KnowledgeRepository
 
 
+_ARTWORK_INFORMATION_OPTIONS = (
+    "overview",
+    "author",
+    "location",
+    "date",
+    "description",
+)
+
+
 KNOWLEDGE_TOOL_SCHEMAS = [
     {
         "type": "function",
@@ -19,9 +28,24 @@ KNOWLEDGE_TOOL_SCHEMAS = [
                     "artwork_title": {
                         "type": "string",
                         "description": "Titolo dell'opera",
-                    }
+                    },
+                    "requested_information": {
+                        "type": "string",
+                        "enum": list(
+                            _ARTWORK_INFORMATION_OPTIONS
+                        ),
+                        "description": (
+                            "Tipo di informazione richiesta "
+                            "dall'utente. Usare overview per "
+                            "richieste generiche come parlami "
+                            "dell'opera."
+                        ),
+                    },
                 },
-                "required": ["artwork_title"],
+                "required": [
+                    "artwork_title",
+                    "requested_information",
+                ],
             },
         },
     },
@@ -197,6 +221,22 @@ class KnowledgeToolExecutor:
             arguments,
             "artwork_title",
         )
+        requested_information = self._required_string(
+            arguments,
+            "requested_information",
+        ).casefold()
+
+        if (
+            requested_information
+            not in _ARTWORK_INFORMATION_OPTIONS
+        ):
+            raise ValueError(
+                "requested_information deve essere uno "
+                "dei valori consentiti: "
+                + ", ".join(
+                    _ARTWORK_INFORMATION_OPTIONS
+                )
+            )
 
         artwork = (
             self._knowledge_repository

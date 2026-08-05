@@ -30,6 +30,15 @@ _DEFAULT_INTENTS = {
 }
 
 
+_ARTWORK_INFORMATION_INTENTS = {
+    "overview": Intent.ARTWORK_DESCRIPTION,
+    "author": Intent.ARTWORK_AUTHOR,
+    "location": Intent.ARTWORK_LOCATION,
+    "date": Intent.ARTWORK_DATE,
+    "description": Intent.ARTWORK_DESCRIPTION,
+}
+
+
 class AgentResultMapper:
     def map(
         self,
@@ -119,9 +128,36 @@ class AgentResultMapper:
         if not result.executions:
             return Intent.UNKNOWN
 
-        first_tool = (
-            result.executions[0].tool_call.name
-        )
+        first_execution = result.executions[0]
+        first_tool = first_execution.tool_call.name
+
+        if first_tool == "get_artwork_information":
+            requested_information = (
+                first_execution
+                .tool_call
+                .arguments
+                .get("requested_information")
+            )
+
+            if isinstance(
+                requested_information,
+                str,
+            ):
+                normalized_information = (
+                    requested_information
+                    .strip()
+                    .casefold()
+                )
+
+                return (
+                    _ARTWORK_INFORMATION_INTENTS
+                    .get(
+                        normalized_information,
+                        Intent.ARTWORK_DESCRIPTION,
+                    )
+                )
+
+            return Intent.ARTWORK_DESCRIPTION
 
         return _DEFAULT_INTENTS.get(
             first_tool,

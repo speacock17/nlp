@@ -152,6 +152,80 @@ class DialogueManagerTest(unittest.TestCase):
             [response.artworks[0].uri],
         )
 
+    def test_single_artwork_preserves_previous_list(
+        self,
+    ) -> None:
+        _, list_response, first_state = self._process(
+            "session-1",
+            "Quali opere di Caravaggio posso vedere "
+            "a Napoli?",
+        )
+
+        previous_result_uris = [
+            artwork.uri
+            for artwork in list_response.artworks
+        ]
+
+        self.assertGreater(
+            len(previous_result_uris),
+            1,
+        )
+        self.assertEqual(
+            first_state.last_result_uris,
+            previous_result_uris,
+        )
+
+        _, artwork_response, final_state = self._process(
+            "session-1",
+            "Dove si trova il Martirio di "
+            "sant'Orsola?",
+        )
+
+        self.assertEqual(
+            final_state.current_artwork_uri,
+            artwork_response.artworks[0].uri,
+        )
+        self.assertEqual(
+            final_state.last_result_uris,
+            previous_result_uris,
+        )
+
+    def test_new_list_replaces_previous_list(
+        self,
+    ) -> None:
+        _, first_response, _ = self._process(
+            "session-1",
+            "Quali opere di Caravaggio posso vedere "
+            "a Napoli?",
+        )
+        first_result_uris = [
+            artwork.uri
+            for artwork in first_response.artworks
+        ]
+
+        _, second_response, final_state = self._process(
+            "session-1",
+            "Quali opere di Battistello Caracciolo "
+            "posso vedere a Napoli?",
+        )
+        second_result_uris = [
+            artwork.uri
+            for artwork in second_response.artworks
+        ]
+
+        self.assertGreater(
+            len(second_result_uris),
+            1,
+        )
+        self.assertNotEqual(
+            first_result_uris,
+            second_result_uris,
+        )
+        self.assertEqual(
+            final_state.last_result_uris,
+            second_result_uris,
+        )
+
     def test_stores_pending_clarification(
         self,
     ) -> None:

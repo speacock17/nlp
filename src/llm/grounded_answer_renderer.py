@@ -204,6 +204,73 @@ class GroundedAnswerRenderer:
         description = self._text(
             artwork.get("description")
         )
+        requested_information = (
+            self._text(
+                arguments.get(
+                    "requested_information"
+                )
+            )
+            or "overview"
+        )
+
+        if requested_information == "author":
+            if artist_name:
+                return (
+                    f"{title} "
+                    f"\u00e8 attribuita a {artist_name}."
+                )
+
+            return (
+                f"Nel database non \u00e8 disponibile "
+                f"l'autore di {title}."
+            )
+
+        if requested_information == "location":
+            if place_name:
+                location = (
+                    f"{title} si trova presso "
+                    f"{place_name}"
+                )
+
+                if city:
+                    location += f", a {city}"
+
+                return location + "."
+
+            return (
+                f"Nel database non \u00e8 disponibile "
+                f"il luogo in cui si trova {title}."
+            )
+
+        if requested_information == "date":
+            if year is not None:
+                return (
+                    f"{title} \u00e8 stato realizzato "
+                    f"nel {year}."
+                )
+
+            if completion_date:
+                return (
+                    f"{title} ha data di completamento "
+                    f"{completion_date}."
+                )
+
+            return (
+                f"Nel database non \u00e8 disponibile "
+                f"la data di realizzazione di {title}."
+            )
+
+        if requested_information == "description":
+            if description:
+                return (
+                    f"{title}: "
+                    f"{description.rstrip('.')}."
+                )
+
+            return (
+                f"Nel database non \u00e8 disponibile "
+                f"una descrizione di {title}."
+            )
 
         if artist_name:
             facts.append(

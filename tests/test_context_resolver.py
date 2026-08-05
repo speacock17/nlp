@@ -102,6 +102,185 @@ class ContextResolverTest(unittest.TestCase):
             self.artwork.uri,
         )
 
+    def test_unknown_question_receives_current_artwork(
+        self,
+    ) -> None:
+        self.memory_repository.save_state(
+            DialogueState(
+                session_id="session-1",
+                current_artwork_uri=self.artwork.uri,
+            )
+        )
+        result = self.pipeline.analyze(
+            "Da chi \u00e8 stato dipinto?"
+        )
+
+        self.assertEqual(
+            result.intent,
+            Intent.UNKNOWN,
+        )
+
+        resolved = self.resolver.resolve(
+            "session-1",
+            result,
+        )
+
+        self.assertEqual(
+            resolved.intent,
+            Intent.UNKNOWN,
+        )
+        self.assertEqual(len(resolved.entities), 1)
+        self.assertEqual(
+            resolved.entities[0].entity_type,
+            EntityType.ARTWORK,
+        )
+        self.assertEqual(
+            resolved.entities[0].uri,
+            self.artwork.uri,
+        )
+
+    def test_ordinal_selects_item_from_last_results(
+        self,
+    ) -> None:
+        second_artwork = (
+            self.knowledge_repository
+            .get_artwork_by_title(
+                "Sette opere di Misericordia"
+            )
+        )
+
+        self.memory_repository.save_state(
+            DialogueState(
+                session_id="session-1",
+                current_artwork_uri=self.artwork.uri,
+                last_result_uris=[
+                    self.artwork.uri,
+                    second_artwork.uri,
+                ],
+            )
+        )
+
+        result = self.pipeline.analyze(
+            "Dove si trova il secondo elencato?"
+        )
+        resolved = self.resolver.resolve(
+            "session-1",
+            result,
+        )
+
+        artwork_entities = [
+            entity
+            for entity in resolved.entities
+            if entity.entity_type
+            == EntityType.ARTWORK
+        ]
+
+        self.assertEqual(
+            resolved.intent,
+            Intent.ARTWORK_LOCATION,
+        )
+        self.assertEqual(
+            len(artwork_entities),
+            1,
+        )
+        self.assertEqual(
+            artwork_entities[0].uri,
+            second_artwork.uri,
+        )
+
+    def test_last_ordinal_selects_final_result(
+        self,
+    ) -> None:
+        last_artwork = (
+            self.knowledge_repository
+            .get_artwork_by_title(
+                "Sette opere di Misericordia"
+            )
+        )
+
+        self.memory_repository.save_state(
+            DialogueState(
+                session_id="session-1",
+                current_artwork_uri=self.artwork.uri,
+                last_result_uris=[
+                    self.artwork.uri,
+                    last_artwork.uri,
+                ],
+            )
+        )
+
+        result = self.pipeline.analyze(
+            "Dove si trova l'ultimo elencato?"
+        )
+        resolved = self.resolver.resolve(
+            "session-1",
+            result,
+        )
+
+        artwork_entities = [
+            entity
+            for entity in resolved.entities
+            if entity.entity_type
+            == EntityType.ARTWORK
+        ]
+
+        self.assertEqual(
+            len(artwork_entities),
+            1,
+        )
+        self.assertEqual(
+            artwork_entities[0].uri,
+            last_artwork.uri,
+        )
+
+    def test_invalid_ordinal_does_not_use_current_artwork(
+        self,
+    ) -> None:
+        second_artwork = (
+            self.knowledge_repository
+            .get_artwork_by_title(
+                "Sette opere di Misericordia"
+            )
+        )
+
+        self.memory_repository.save_state(
+            DialogueState(
+                session_id="session-1",
+                current_artwork_uri=self.artwork.uri,
+                last_result_uris=[
+                    self.artwork.uri,
+                    second_artwork.uri,
+                ],
+            )
+        )
+
+        result = self.pipeline.analyze(
+            "Dove si trova il quinto elencato?"
+        )
+        resolved = self.resolver.resolve(
+            "session-1",
+            result,
+        )
+
+        artwork_entities = [
+            entity
+            for entity in resolved.entities
+            if entity.entity_type
+            == EntityType.ARTWORK
+        ]
+
+        self.assertEqual(
+            artwork_entities,
+            [],
+        )
+        self.assertTrue(
+            any(
+                entity.entity_type
+                == EntityType.ORDINAL
+                for entity in resolved.entities
+            )
+        )
+
     def test_follow_up_uses_current_artwork(
         self,
     ) -> None:

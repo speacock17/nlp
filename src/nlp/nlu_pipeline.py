@@ -4,6 +4,7 @@ from src.core.models import NLUResult
 from src.nlp.claim_extractor import ClaimExtractor
 from src.nlp.entity_linker import EntityLinker
 from src.nlp.intent_classifier import classify_intent
+from src.nlp.ordinal_recognizer import OrdinalRecognizer
 from src.nlp.preprocessing import preprocess_question
 
 
@@ -16,6 +17,7 @@ class NLUPipeline:
             knowledge_repository
         )
         self._claim_extractor = ClaimExtractor()
+        self._ordinal_recognizer = OrdinalRecognizer()
 
     def analyze(
         self,
@@ -27,7 +29,10 @@ class NLUPipeline:
             text
         )
 
-        entities = self._entity_linker.link(text)
+        entities = [
+            *self._entity_linker.link(text),
+            *self._ordinal_recognizer.recognize(text),
+        ]
 
         if (
             intent == Intent.UNKNOWN
