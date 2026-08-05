@@ -123,8 +123,8 @@ Eseguire l'intera suite:
 
 Stato verificato:
 
-    277 test superati
-    17 subtest superati
+    278 test superati
+    21 subtest superati
     0 fallimenti
 
 ## Struttura principale
