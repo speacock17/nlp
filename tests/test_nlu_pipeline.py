@@ -108,6 +108,55 @@ class NLUPipelineTest(unittest.TestCase):
         )
         self.assertEqual(len(artists), 2)
 
+    def test_recognizes_ordinal_references(
+        self,
+    ) -> None:
+        cases = [
+            (
+                "Dove si trova il primo elencato?",
+                "1",
+            ),
+            (
+                "Dove si trova il secondo elencato?",
+                "2",
+            ),
+            (
+                "Dove si trova il terzo elencato?",
+                "3",
+            ),
+            (
+                "Dove si trova l'ultimo elencato?",
+                "last",
+            ),
+        ]
+
+        for text, expected_value in cases:
+            with self.subTest(text=text):
+                result = self.pipeline.analyze(text)
+
+                ordinal_entities = [
+                    entity
+                    for entity in result.entities
+                    if entity.entity_type
+                    == EntityType.ORDINAL
+                ]
+
+                self.assertEqual(
+                    result.intent,
+                    Intent.ARTWORK_LOCATION,
+                )
+                self.assertEqual(
+                    len(ordinal_entities),
+                    1,
+                )
+                self.assertEqual(
+                    ordinal_entities[0].canonical_name,
+                    expected_value,
+                )
+                self.assertIsNone(
+                    ordinal_entities[0].uri,
+                )
+
     def test_out_of_scope_question(self) -> None:
         result = self.pipeline.analyze(
             "Che tempo fa domani?"

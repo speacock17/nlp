@@ -154,6 +154,20 @@ class HybridChatbotService:
                 ]
             )
 
+            lines.extend(
+                [
+                    (
+                        "Usa il contesto soltanto se la "
+                        "domanda dell'utente vi fa "
+                        "riferimento."
+                    ),
+                    (
+                        "Ignoralo se la nuova domanda non "
+                        "\u00e8 pertinente."
+                    ),
+                ]
+            )
+
             for entity in nlu_result.entities:
                 name = (
                     entity.canonical_name

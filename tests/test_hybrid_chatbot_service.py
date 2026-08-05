@@ -5,7 +5,10 @@ from src.core.enums import (
     InconsistencyType,
     Intent,
 )
-from src.core.models import BotResponse
+from src.core.models import (
+    BotResponse,
+    DialogueState,
+)
 from src.database.mock_knowledge_repository import (
     MockKnowledgeRepository,
 )
@@ -263,6 +266,403 @@ class HybridChatbotServiceTest(unittest.TestCase):
         )
         self.assertEqual(state.turn_index, 2)
 
+    def test_ordinal_reference_uses_last_result_order(
+        self,
+    ) -> None:
+        first_artwork = (
+            self.knowledge_repository
+            .get_artwork_by_title(
+                "Flagellazione di Cristo (Caravaggio)"
+            )
+        )
+        second_artwork = (
+            self.knowledge_repository
+            .get_artwork_by_title(
+                "Sette opere di Misericordia"
+            )
+        )
+        third_artwork = (
+            self.knowledge_repository
+            .get_artwork_by_title(
+                "Martirio di sant'Orsola"
+            )
+        )
+
+        self.memory_repository.save_state(
+            DialogueState(
+                session_id="session-1",
+                current_artwork_uri=first_artwork.uri,
+                last_result_uris=[
+                    first_artwork.uri,
+                    second_artwork.uri,
+                    third_artwork.uri,
+                ],
+            )
+        )
+
+        second_artwork_data = {
+            **artwork_data(),
+            "uri": second_artwork.uri,
+            "title": second_artwork.title,
+            "normalized_title": (
+                second_artwork.normalized_title
+            ),
+            "place_uri": second_artwork.place_uri,
+            "place_name": second_artwork.place_name,
+            "year": second_artwork.year,
+            "description": second_artwork.description,
+        }
+
+        self.agent.run.return_value = AgentResult(
+            content=(
+                "Sette opere di Misericordia si trova "
+                "presso Pio Monte della Misericordia, "
+                "a Napoli."
+            ),
+            executions=[
+                ToolExecution(
+                    tool_call=LLMToolCall(
+                        name="get_artwork_information",
+                        arguments={
+                            "artwork_title": (
+                                "Sette opere di Misericordia"
+                            ),
+                            "requested_information": (
+                                "location"
+                            ),
+                        },
+                    ),
+                    result={
+                        "found": True,
+                        "data": second_artwork_data,
+                    },
+                )
+            ],
+        )
+
+        response = self.service.process(
+            session_id="session-1",
+            text=(
+                "Dove si trova il secondo elencato?"
+            ),
+        )
+
+        prompt = self.agent.run.call_args.args[0]
+
+        self.assertIn(
+            "Sette opere di Misericordia",
+            prompt,
+        )
+        self.assertNotIn(
+            "Flagellazione di Cristo (Caravaggio)",
+            prompt,
+        )
+        self.assertEqual(
+            response.intent,
+            Intent.ARTWORK_LOCATION,
+        )
+        self.assertEqual(
+            response.artworks[0].uri,
+            second_artwork.uri,
+        )
+        self.assertEqual(
+            response.artworks[0].place_name,
+            "Pio Monte della Misericordia",
+        )
+        self.fallback_service.process.assert_not_called()
+
+    def test_ordinal_list_survives_single_result_follow_ups(
+        self,
+    ) -> None:
+        first_artwork = (
+            self.knowledge_repository
+            .get_artwork_by_title(
+                "Flagellazione di Cristo (Caravaggio)"
+            )
+        )
+        second_artwork = (
+            self.knowledge_repository
+            .get_artwork_by_title(
+                "Sette opere di Misericordia"
+            )
+        )
+        third_artwork = (
+            self.knowledge_repository
+            .get_artwork_by_title(
+                "Martirio di sant'Orsola"
+            )
+        )
+
+        def data_for(artwork) -> dict:
+            return {
+                **artwork_data(),
+                "uri": artwork.uri,
+                "title": artwork.title,
+                "normalized_title": (
+                    artwork.normalized_title
+                ),
+                "place_uri": artwork.place_uri,
+                "place_name": artwork.place_name,
+                "year": artwork.year,
+                "description": artwork.description,
+            }
+
+        ordered_artworks = [
+            first_artwork,
+            second_artwork,
+            third_artwork,
+        ]
+        ordered_uris = [
+            artwork.uri
+            for artwork in ordered_artworks
+        ]
+
+        self.agent.run.side_effect = [
+            AgentResult(
+                content=(
+                    "Nel database risultano 3 opere "
+                    "di Caravaggio visitabili a Napoli."
+                ),
+                executions=[
+                    ToolExecution(
+                        tool_call=LLMToolCall(
+                            name=(
+                                "list_artworks_by_artist"
+                            ),
+                            arguments={
+                                "artist_name": "Caravaggio",
+                                "city": "Napoli",
+                            },
+                        ),
+                        result={
+                            "count": 3,
+                            "data": [
+                                data_for(artwork)
+                                for artwork
+                                in ordered_artworks
+                            ],
+                        },
+                    )
+                ],
+            ),
+            AgentResult(
+                content=(
+                    "Sette opere di Misericordia "
+                    "si trova presso Pio Monte "
+                    "della Misericordia, a Napoli."
+                ),
+                executions=[
+                    ToolExecution(
+                        tool_call=LLMToolCall(
+                            name=(
+                                "get_artwork_information"
+                            ),
+                            arguments={
+                                "artwork_title": (
+                                    second_artwork.title
+                                ),
+                                "requested_information": (
+                                    "location"
+                                ),
+                            },
+                        ),
+                        result={
+                            "found": True,
+                            "data": data_for(
+                                second_artwork
+                            ),
+                        },
+                    )
+                ],
+            ),
+            AgentResult(
+                content=(
+                    "Sette opere di Misericordia "
+                    "? stato realizzato nel 1607."
+                ),
+                executions=[
+                    ToolExecution(
+                        tool_call=LLMToolCall(
+                            name=(
+                                "get_artwork_information"
+                            ),
+                            arguments={
+                                "artwork_title": (
+                                    second_artwork.title
+                                ),
+                                "requested_information": (
+                                    "date"
+                                ),
+                            },
+                        ),
+                        result={
+                            "found": True,
+                            "data": data_for(
+                                second_artwork
+                            ),
+                        },
+                    )
+                ],
+            ),
+            AgentResult(
+                content=(
+                    "Martirio di sant'Orsola si trova "
+                    "presso Palazzo Zevallos, a Napoli."
+                ),
+                executions=[
+                    ToolExecution(
+                        tool_call=LLMToolCall(
+                            name=(
+                                "get_artwork_information"
+                            ),
+                            arguments={
+                                "artwork_title": (
+                                    third_artwork.title
+                                ),
+                                "requested_information": (
+                                    "location"
+                                ),
+                            },
+                        ),
+                        result={
+                            "found": True,
+                            "data": data_for(
+                                third_artwork
+                            ),
+                        },
+                    )
+                ],
+            ),
+        ]
+
+        self.service.process(
+            session_id="session-1",
+            text=(
+                "Quali sono le opere di Caravaggio "
+                "a Napoli?"
+            ),
+        )
+        self.service.process(
+            session_id="session-1",
+            text=(
+                "Dove si trova il secondo elencato?"
+            ),
+        )
+        self.service.process(
+            session_id="session-1",
+            text="A quando risale il dipinto?",
+        )
+        final_response = self.service.process(
+            session_id="session-1",
+            text=(
+                "Mentre il terzo elencato "
+                "dove si trova?"
+            ),
+        )
+
+        final_prompt = (
+            self.agent.run.call_args_list[3].args[0]
+        )
+        final_state = (
+            self.memory_repository.load_state(
+                "session-1"
+            )
+        )
+
+        self.assertIn(
+            third_artwork.title,
+            final_prompt,
+        )
+        self.assertEqual(
+            final_response.intent,
+            Intent.ARTWORK_LOCATION,
+        )
+        self.assertEqual(
+            final_response.artworks[0].uri,
+            third_artwork.uri,
+        )
+        self.assertEqual(
+            final_response.artworks[0].place_name,
+            "Palazzo Zevallos",
+        )
+        self.assertEqual(
+            final_state.last_result_uris,
+            ordered_uris,
+        )
+        self.assertEqual(
+            final_state.current_artwork_uri,
+            third_artwork.uri,
+        )
+        self.fallback_service.process.assert_not_called()
+
+    def test_unknown_paraphrase_uses_current_artwork(
+        self,
+    ) -> None:
+        artwork = (
+            self.knowledge_repository
+            .get_artwork_by_title(
+                "Martirio di sant'Orsola"
+            )
+        )
+        self.memory_repository.save_state(
+            DialogueState(
+                session_id="session-1",
+                current_artwork_uri=artwork.uri,
+            )
+        )
+
+        self.agent.run.return_value = AgentResult(
+            content=(
+                "Martirio di sant'Orsola "
+                "\u00e8 attribuita a Caravaggio."
+            ),
+            executions=[
+                ToolExecution(
+                    tool_call=LLMToolCall(
+                        name="get_artwork_information",
+                        arguments={
+                            "artwork_title": (
+                                "Martirio di sant'Orsola"
+                            ),
+                            "requested_information": "author",
+                        },
+                    ),
+                    result={
+                        "found": True,
+                        "data": artwork_data(),
+                    },
+                )
+            ],
+        )
+
+        response = self.service.process(
+            session_id="session-1",
+            text="Da chi \u00e8 stato dipinto?",
+        )
+
+        prompt = self.agent.run.call_args.args[0]
+
+        self.assertIn(
+            "Martirio di sant'Orsola",
+            prompt,
+        )
+        self.assertIn(
+            "Da chi \u00e8 stato dipinto?",
+            prompt,
+        )
+        self.assertEqual(
+            response.intent,
+            Intent.ARTWORK_AUTHOR,
+        )
+        self.assertEqual(
+            response.text,
+            (
+                "Martirio di sant'Orsola "
+                "\u00e8 attribuita a Caravaggio."
+            ),
+        )
+        self.fallback_service.process.assert_not_called()
+
     def test_uses_fallback_when_agent_fails(
         self,
     ) -> None:
@@ -290,6 +690,69 @@ class HybridChatbotServiceTest(unittest.TestCase):
             session_id="session-1",
             text="Domanda di prova",
         )
+
+    def test_context_does_not_force_out_of_scope_question(
+        self,
+    ) -> None:
+        artwork = (
+            self.knowledge_repository
+            .get_artwork_by_title(
+                "Martirio di sant'Orsola"
+            )
+        )
+        self.memory_repository.save_state(
+            DialogueState(
+                session_id="session-1",
+                current_artwork_uri=artwork.uri,
+            )
+        )
+
+        self.agent.run.return_value = AgentResult(
+            content=(
+                "Posso rispondere soltanto sulle opere "
+                "di Caravaggio e Battistello a Napoli."
+            ),
+            executions=[],
+        )
+
+        response = self.service.process(
+            session_id="session-1",
+            text="Raccontami una barzelletta",
+        )
+
+        prompt = self.agent.run.call_args.args[0]
+
+        self.assertIn(
+            "Martirio di sant'Orsola",
+            prompt,
+        )
+        self.assertIn(
+            (
+                "Usa il contesto soltanto se la domanda "
+                "dell'utente vi fa riferimento."
+            ),
+            prompt,
+        )
+        self.assertIn(
+            (
+                "Ignoralo se la nuova domanda non "
+                "\u00e8 pertinente."
+            ),
+            prompt,
+        )
+        self.assertEqual(
+            response.intent,
+            Intent.UNKNOWN,
+        )
+        self.assertEqual(
+            response.text,
+            (
+                "Posso rispondere soltanto sulle opere "
+                "di Caravaggio e Battistello a Napoli."
+            ),
+        )
+        self.assertEqual(response.artworks, [])
+        self.fallback_service.process.assert_not_called()
 
     def test_maps_direct_out_of_scope_response(
         self,
