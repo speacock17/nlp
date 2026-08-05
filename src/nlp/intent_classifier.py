@@ -1,4 +1,4 @@
-﻿from src.core.enums import Intent
+from src.core.enums import Intent
 from src.nlp.preprocessing import preprocess_question
 
 
@@ -90,8 +90,14 @@ def classify_intent(
         normalized_text,
         (
             "dove si trova",
+            "dove e situata",
+            "dove e situato",
+            "dov e situata",
+            "dov e situato",
             "dove e conservata",
             "dove e conservato",
+            "dov e conservata",
+            "dov e conservato",
             "in quale museo",
             "in quale chiesa",
             "luogo si trova",
