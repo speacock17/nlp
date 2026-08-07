@@ -121,6 +121,39 @@ class HybridChatbotServiceTest(unittest.TestCase):
         )
         self.fallback_service.process.assert_not_called()
 
+    def test_list_places_bypasses_agent(
+        self,
+    ) -> None:
+        response = self.service.process(
+            session_id="session-1",
+            text="Quali musei posso visitare a Napoli?",
+        )
+
+        self.assertEqual(
+            response.intent,
+            Intent.LIST_PLACES,
+        )
+        self.assertEqual(len(response.places), 7)
+        self.assertIn(
+            "Museo nazionale di Capodimonte",
+            response.text,
+        )
+        self.assertIn(
+            "Palazzo Zevallos",
+            response.text,
+        )
+        self.agent.run.assert_not_called()
+        self.fallback_service.process.assert_not_called()
+
+        state = self.memory_repository.load_state(
+            "session-1"
+        )
+        self.assertEqual(state.turn_index, 1)
+        self.assertEqual(
+            state.last_intent,
+            Intent.LIST_PLACES,
+        )
+
     def test_preserves_deterministic_inconsistency(
         self,
     ) -> None:

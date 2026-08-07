@@ -9,6 +9,7 @@ from src.llm.ollama_llm_client import (
     LLMToolCall,
 )
 from src.llm.tool_calling_agent import (
+    SYSTEM_PROMPT,
     ToolCallingAgent,
 )
 
@@ -25,6 +26,22 @@ class ToolCallingAgentTest(unittest.TestCase):
             tool_executor=self.tool_executor,
             tool_schemas=self.tool_schemas,
             answer_renderer=self.answer_renderer,
+        )
+
+    def test_system_prompt_guides_generic_place_requests(
+        self,
+    ) -> None:
+        self.assertIn(
+            "list_places",
+            SYSTEM_PROMPT,
+        )
+        self.assertIn(
+            "musei",
+            SYSTEM_PROMPT.casefold(),
+        )
+        self.assertIn(
+            "luoghi",
+            SYSTEM_PROMPT.casefold(),
         )
 
     def test_executes_tool_and_renders_grounded_answer(

@@ -97,6 +97,23 @@ KNOWLEDGE_TOOL_SCHEMAS = [
     {
         "type": "function",
         "function": {
+            "name": "list_places",
+            "description": (
+                "Elenca i musei e i luoghi di Napoli "
+                "in cui sono visitabili opere presenti "
+                "nel database."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+                "additionalProperties": False,
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "get_artist_information",
             "description": (
                 "Recupera dal database le informazioni "
@@ -185,6 +202,8 @@ class KnowledgeToolExecutor:
                 self._list_artworks_by_artist,
             "list_artworks_by_place":
                 self._list_artworks_by_place,
+            "list_places":
+                self._list_places,
             "get_artist_information":
                 self._get_artist_information,
             "get_place_information":
@@ -296,6 +315,17 @@ class KnowledgeToolExecutor:
         )
 
         return self._list_result(artworks)
+
+    def _list_places(
+        self,
+        arguments: dict[str, Any],
+    ) -> dict[str, Any]:
+        places = (
+            self._knowledge_repository
+            .list_places()
+        )
+
+        return self._list_result(places)
 
     def _get_artist_information(
         self,

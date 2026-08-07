@@ -153,6 +153,18 @@ class Neo4jKnowledgeRepositoryIntegrationTest(
             "Battistello Caracciolo",
         )
 
+    def test_list_places(self) -> None:
+        places = self.repository.list_places()
+
+        self.assertEqual(len(places), 7)
+        self.assertTrue(
+            all(isinstance(place, Place) for place in places)
+        )
+        self.assertEqual(
+            [place.name for place in places],
+            sorted(place.name for place in places),
+        )
+
     def test_get_place_by_name(self) -> None:
         place = self.repository.get_place_by_name(
             "Pio Monte della Misericordia"

@@ -32,6 +32,7 @@ class SharedContractsTest(unittest.TestCase):
                 "artwork_date",
                 "artwork_description",
                 "artist_info",
+                "list_places",
                 "place_artworks",
                 "compare_artists",
                 "follow_up",
@@ -140,6 +141,7 @@ class SharedContractsTest(unittest.TestCase):
                 "get_artist_by_uri",
                 "search_artists",
                 "get_place_by_name",
+                "list_places",
                 "search_places",
             },
         )

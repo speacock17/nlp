@@ -37,6 +37,8 @@ class GroundedAnswerRenderer:
                 self._render_artworks_by_artist,
             "list_artworks_by_place":
                 self._render_artworks_by_place,
+            "list_places":
+                self._render_places,
             "search_artworks":
                 self._render_artwork_search,
             "get_artwork_information":
@@ -130,6 +132,32 @@ class GroundedAnswerRenderer:
             f"Presso {place_name or 'questo luogo'} "
             f"risultano: "
             + "; ".join(titles)
+            + "."
+        )
+
+    def _render_places(
+        self,
+        arguments: dict[str, Any],
+        result: dict[str, Any],
+    ) -> str:
+        places = self._data_list(result)
+
+        if not places:
+            return (
+                "Non risultano luoghi visitabili "
+                "nel database."
+            )
+
+        names = [
+            self._text(place.get("name"))
+            or "Luogo senza nome"
+            for place in places
+        ]
+
+        return (
+            "Le opere presenti nel database sono "
+            "visitabili presso: "
+            + ", ".join(names)
             + "."
         )
 

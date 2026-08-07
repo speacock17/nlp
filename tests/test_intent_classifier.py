@@ -73,6 +73,21 @@ class IntentClassifierTest(unittest.TestCase):
             Intent.PLACE_ARTWORKS,
         )
 
+    def test_list_places(self) -> None:
+        questions = (
+            "Quali musei posso visitare?",
+            "Quali musei posso visitare a Napoli?",
+            "Quali luoghi posso visitare?",
+            "Quali luoghi posso visitare a Napoli?",
+        )
+
+        for question in questions:
+            with self.subTest(question=question):
+                self.assert_intent(
+                    question,
+                    Intent.LIST_PLACES,
+                )
+
     def test_compare_artists(self) -> None:
         self.assert_intent(
             "confronta caravaggio e battistello caracciolo",

@@ -62,6 +62,10 @@ class KnowledgeRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def list_places(self) -> list[Place]:
+        raise NotImplementedError
+
+    @abstractmethod
     def get_place_by_name(self, place_name: str) -> Place | None:
         raise NotImplementedError
 

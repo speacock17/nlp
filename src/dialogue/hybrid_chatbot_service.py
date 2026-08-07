@@ -82,6 +82,19 @@ class HybridChatbotService:
 
             return response
 
+        if resolved_result.intent == Intent.LIST_PLACES:
+            response = self._response_generator.generate(
+                nlu_result=resolved_result,
+            )
+
+            self._dialogue_manager.record_turn(
+                session_id=session_id,
+                nlu_result=resolved_result,
+                response=response,
+            )
+
+            return response
+
         agent_prompt = self._build_agent_prompt(
             resolved_result
         )

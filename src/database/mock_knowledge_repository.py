@@ -272,6 +272,15 @@ class MockKnowledgeRepository(KnowledgeRepository):
 
         return matches[:limit]
 
+    def list_places(self) -> list[Place]:
+        return sorted(
+            self._places,
+            key=lambda place: (
+                place.name,
+                place.uri,
+            ),
+        )
+
     def get_place_by_name(
         self,
         place_name: str,

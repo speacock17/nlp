@@ -64,6 +64,15 @@ def classify_intent(
     if _contains_any(
         normalized_text,
         (
+            "quali musei posso visitare",
+            "quali luoghi posso visitare",
+        ),
+    ):
+        return Intent.LIST_PLACES, 0.95
+
+    if _contains_any(
+        normalized_text,
+        (
             "quali opere si trovano",
             "quali opere ci sono",
             "opere conservate",

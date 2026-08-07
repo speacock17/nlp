@@ -383,6 +383,24 @@ class Neo4jKnowledgeRepository(KnowledgeRepository):
             for item in properties
         ]
 
+    def list_places(self) -> list[Place]:
+        properties = self._get_many_nodes(
+            """
+            MATCH (place:Place)
+            RETURN place
+            ORDER BY
+                place.name,
+                place.uri
+            """,
+            "place",
+            {},
+        )
+
+        return [
+            self._to_place(item)
+            for item in properties
+        ]
+
     def get_place_by_name(
         self,
         place_name: str,

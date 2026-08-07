@@ -7,6 +7,7 @@ class Intent(str, Enum):
     ARTWORK_DATE = "artwork_date"
     ARTWORK_DESCRIPTION = "artwork_description"
     ARTIST_INFO = "artist_info"
+    LIST_PLACES = "list_places"
     PLACE_ARTWORKS = "place_artworks"
     COMPARE_ARTISTS = "compare_artists"
     FOLLOW_UP = "follow_up"

@@ -24,6 +24,7 @@ _DEFAULT_INTENTS = {
         Intent.LIST_ARTWORKS_BY_ARTIST
     ),
     "list_artworks_by_place": Intent.PLACE_ARTWORKS,
+    "list_places": Intent.LIST_PLACES,
     "search_artworks": Intent.ARTWORK_DESCRIPTION,
     "get_artist_information": Intent.ARTIST_INFO,
     "get_place_information": Intent.PLACE_ARTWORKS,
@@ -68,7 +69,10 @@ class AgentResultMapper:
                     Artist(**item)
                     for item in data_items
                 )
-            elif tool_name == "get_place_information":
+            elif tool_name in {
+                "get_place_information",
+                "list_places",
+            }:
                 places.extend(
                     Place(**item)
                     for item in data_items

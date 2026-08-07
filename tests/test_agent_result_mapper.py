@@ -186,6 +186,61 @@ class AgentResultMapperTest(unittest.TestCase):
             Intent.ARTWORK_DATE,
         )
 
+    def test_maps_place_list(
+        self,
+    ) -> None:
+        result = AgentResult(
+            content=(
+                "Le opere presenti nel database sono "
+                "visitabili in due luoghi."
+            ),
+            executions=[
+                ToolExecution(
+                    tool_call=LLMToolCall(
+                        name="list_places",
+                        arguments={},
+                    ),
+                    result={
+                        "count": 2,
+                        "data": [
+                            {
+                                "uri": "place:1",
+                                "name": (
+                                    "Museo nazionale "
+                                    "di Capodimonte"
+                                ),
+                                "normalized_name": (
+                                    "museo nazionale "
+                                    "di capodimonte"
+                                ),
+                                "city": "Napoli",
+                            },
+                            {
+                                "uri": "place:2",
+                                "name": "Palazzo Zevallos",
+                                "normalized_name": (
+                                    "palazzo zevallos"
+                                ),
+                                "city": "Napoli",
+                            },
+                        ],
+                    },
+                ),
+            ],
+        )
+
+        response = self.mapper.map(result)
+
+        self.assertEqual(
+            response.intent,
+            Intent.LIST_PLACES,
+        )
+        self.assertEqual(len(response.places), 2)
+        self.assertEqual(
+            response.places[1].name,
+            "Palazzo Zevallos",
+        )
+
     def test_maps_artist_information(self) -> None:
         result = AgentResult(
             content="Caravaggio era un pittore italiano.",

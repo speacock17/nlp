@@ -42,6 +42,8 @@ class ResponseGenerator:
                 self._artwork_description,
             Intent.ARTIST_INFO:
                 self._artist_info,
+            Intent.LIST_PLACES:
+                self._list_places,
             Intent.PLACE_ARTWORKS:
                 self._place_artworks,
             Intent.COMPARE_ARTISTS:
@@ -334,6 +336,33 @@ class ResponseGenerator:
             text=text,
             intent=nlu_result.intent,
             artists=[artist],
+        )
+
+    def _list_places(
+        self,
+        nlu_result: NLUResult,
+    ) -> BotResponse:
+        places = self._knowledge_repository.list_places()
+
+        if not places:
+            text = (
+                "Non risultano luoghi visitabili "
+                "nel database."
+            )
+        else:
+            names = ", ".join(
+                place.name
+                for place in places
+            )
+            text = (
+                "Le opere presenti nel database sono "
+                f"visitabili presso: {names}."
+            )
+
+        return BotResponse(
+            text=text,
+            intent=nlu_result.intent,
+            places=places,
         )
 
     def _place_artworks(

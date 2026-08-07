@@ -120,6 +120,48 @@ class GroundedAnswerRendererTest(unittest.TestCase):
             answer,
         )
 
+    def test_renders_place_list(
+        self,
+    ) -> None:
+        execution = ToolExecution(
+            tool_call=LLMToolCall(
+                name="list_places",
+                arguments={},
+            ),
+            result={
+                "count": 2,
+                "data": [
+                    {
+                        "uri": "place:1",
+                        "name": (
+                            "Museo nazionale di Capodimonte"
+                        ),
+                        "normalized_name": (
+                            "museo nazionale di capodimonte"
+                        ),
+                        "city": "Napoli",
+                    },
+                    {
+                        "uri": "place:2",
+                        "name": "Palazzo Zevallos",
+                        "normalized_name": "palazzo zevallos",
+                        "city": "Napoli",
+                    },
+                ],
+            },
+        )
+
+        answer = self.renderer.render([execution])
+
+        self.assertIn(
+            "Museo nazionale di Capodimonte",
+            answer,
+        )
+        self.assertIn(
+            "Palazzo Zevallos",
+            answer,
+        )
+
     def test_renders_safe_not_found_answer(
         self,
     ) -> None:

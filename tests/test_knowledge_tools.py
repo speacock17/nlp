@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import MagicMock
 
-from src.core.models import Artist, Artwork
+from src.core.models import Artist, Artwork, Place
 from src.llm.knowledge_tools import (
     KNOWLEDGE_TOOL_SCHEMAS,
     KnowledgeToolExecutor,
@@ -27,6 +27,7 @@ class KnowledgeToolExecutorTest(unittest.TestCase):
                 "get_artwork_information",
                 "list_artworks_by_artist",
                 "list_artworks_by_place",
+                "list_places",
                 "get_artist_information",
                 "get_place_information",
                 "search_artworks",
@@ -213,6 +214,35 @@ class KnowledgeToolExecutorTest(unittest.TestCase):
         self.assertEqual(
             result["data"][0]["title"],
             "Sette opere di Misericordia",
+        )
+
+    def test_lists_places(self) -> None:
+        places = [
+            Place(
+                uri="place:1",
+                name="Museo nazionale di Capodimonte",
+                normalized_name="museo nazionale di capodimonte",
+                city="Napoli",
+            ),
+            Place(
+                uri="place:2",
+                name="Palazzo Zevallos",
+                normalized_name="palazzo zevallos",
+                city="Napoli",
+            ),
+        ]
+        self.repository.list_places.return_value = places
+
+        result = self.executor.execute(
+            name="list_places",
+            arguments={},
+        )
+
+        self.repository.list_places.assert_called_once_with()
+        self.assertEqual(result["count"], 2)
+        self.assertEqual(
+            result["data"][0]["name"],
+            "Museo nazionale di Capodimonte",
         )
 
     def test_gets_artist_information(self) -> None:

@@ -101,6 +101,28 @@ class ResponseGeneratorTest(unittest.TestCase):
         self.assertEqual(len(response.artworks), 1)
         self.assertTrue(response.text)
 
+    def test_lists_places(self) -> None:
+        response = self._generate(
+            "Quali musei posso visitare a Napoli?"
+        )
+
+        self.assertEqual(
+            response.intent,
+            Intent.LIST_PLACES,
+        )
+        self.assertEqual(len(response.places), 7)
+        self.assertIn(
+            "Museo nazionale di Capodimonte",
+            response.text,
+        )
+        self.assertIn(
+            "Palazzo Zevallos",
+            response.text,
+        )
+        self.assertFalse(
+            response.needs_clarification
+        )
+
     def test_compares_two_artists(self) -> None:
         response = self._generate(
             "Confronta Caravaggio e Battistello Caracciolo"
