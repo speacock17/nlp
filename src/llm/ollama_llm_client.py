@@ -20,12 +20,17 @@ class LLMResponse:
         default_factory=list
     )
 
+# DICITURE TEMPO
+# "45m"
+# "1h"
+# "1h15m"
 
 class OllamaLLMClient:
     def __init__(
         self,
         model: str = "qwen3:8b",
         chat_function: Callable[..., Any] = chat,
+        keep_alive: str = "30m",
     ) -> None:
         if not isinstance(model, str):
             raise TypeError(
@@ -48,6 +53,7 @@ class OllamaLLMClient:
 
         self._model = clean_model
         self._chat_function = chat_function
+        self._keep_alive = keep_alive
 
     def chat(
         self,
@@ -58,6 +64,8 @@ class OllamaLLMClient:
             model=self._model,
             messages=messages,
             tools=tools,
+            think=False,
+            keep_alive=self._keep_alive,
         )
 
         message = response.message

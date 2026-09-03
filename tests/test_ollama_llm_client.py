@@ -44,6 +44,8 @@ class OllamaLLMClientTest(unittest.TestCase):
                 }
             ],
             tools=None,
+            think=False,
+            keep_alive="30m",
         )
 
     def test_uses_qwen_as_default_model(self) -> None:
@@ -74,6 +76,8 @@ class OllamaLLMClientTest(unittest.TestCase):
                 }
             ],
             tools=None,
+            think=False,
+            keep_alive="30m",
         )
 
     def test_returns_text_response(self) -> None:
@@ -109,6 +113,8 @@ class OllamaLLMClientTest(unittest.TestCase):
                 }
             ],
             tools=None,
+            think=False,
+            keep_alive="30m",
         )
 
     def test_converts_tool_calls(self) -> None:
