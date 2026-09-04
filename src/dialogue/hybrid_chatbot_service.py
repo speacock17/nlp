@@ -82,19 +82,6 @@ class HybridChatbotService:
 
             return response
 
-        if resolved_result.intent == Intent.LIST_PLACES:
-            response = self._response_generator.generate(
-                nlu_result=resolved_result,
-            )
-
-            self._dialogue_manager.record_turn(
-                session_id=session_id,
-                nlu_result=resolved_result,
-                response=response,
-            )
-
-            return response
-
         agent_prompt = self._build_agent_prompt(
             resolved_result
         )
@@ -155,6 +142,29 @@ class HybridChatbotService:
             "Domanda dell'utente:",
             nlu_result.raw_text,
         ]
+
+        if nlu_result.intent not in {
+            Intent.UNKNOWN,
+            Intent.FOLLOW_UP,
+        }:
+            lines.extend(
+                [
+                    "",
+                    (
+                        "Intent principale rilevato dal sistema: "
+                        f"{nlu_result.intent.value}"
+                    ),
+                    (
+                        "Usalo come indicazione semantica, non "
+                        "come vincolo assoluto."
+                    ),
+                    (
+                        "Considera comunque tutta la domanda e "
+                        "soddisfa anche eventuali richieste "
+                        "aggiuntive."
+                    ),
+                ]
+            )
 
         if nlu_result.entities:
             lines.extend(

@@ -39,6 +39,8 @@ class GroundedAnswerRenderer:
                 self._render_artworks_by_place,
             "list_places":
                 self._render_places,
+            "list_places_with_artworks":
+                self._render_places_with_artworks,
             "search_artworks":
                 self._render_artwork_search,
             "get_artwork_information":
@@ -132,6 +134,55 @@ class GroundedAnswerRenderer:
             f"Presso {place_name or 'questo luogo'} "
             f"risultano: "
             + "; ".join(titles)
+            + "."
+        )
+
+    def _render_places_with_artworks(
+        self,
+        arguments: dict[str, Any],
+        result: dict[str, Any],
+    ) -> str:
+        artworks = self._data_list(result)
+
+        if not artworks:
+            return (
+                "Non risultano opere associate ai luoghi "
+                "presenti nel database."
+            )
+
+        grouped: dict[str, list[str]] = {}
+
+        for artwork in artworks:
+            place_name = (
+                self._text(
+                    artwork.get("place_name")
+                )
+                or "Luogo non specificato"
+            )
+            title = (
+                self._text(
+                    artwork.get("title")
+                )
+                or "Opera senza titolo"
+            )
+
+            grouped.setdefault(
+                place_name,
+                [],
+            ).append(title)
+
+        details = [
+            (
+                f"{place_name}: "
+                + "; ".join(titles)
+            )
+            for place_name, titles
+            in grouped.items()
+        ]
+
+        return (
+            "Nei luoghi presenti nel database puoi vedere: "
+            + ". ".join(details)
             + "."
         )
 

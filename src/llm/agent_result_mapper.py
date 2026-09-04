@@ -15,6 +15,7 @@ _ARTWORK_TOOLS = {
     "get_artwork_information",
     "list_artworks_by_artist",
     "list_artworks_by_place",
+    "list_places_with_artworks",
     "search_artworks",
 }
 
@@ -25,6 +26,7 @@ _DEFAULT_INTENTS = {
     ),
     "list_artworks_by_place": Intent.PLACE_ARTWORKS,
     "list_places": Intent.LIST_PLACES,
+    "list_places_with_artworks": Intent.LIST_PLACES,
     "search_artworks": Intent.ARTWORK_DESCRIPTION,
     "get_artist_information": Intent.ARTIST_INFO,
     "get_place_information": Intent.PLACE_ARTWORKS,

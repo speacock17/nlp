@@ -313,6 +313,72 @@ class AgentResultMapperTest(unittest.TestCase):
             Intent.ARTWORK_AUTHOR,
         )
 
+    def test_maps_places_with_artworks_tool(
+        self,
+    ) -> None:
+        result = AgentResult(
+            content=(
+                "Museo nazionale di Capodimonte: "
+                "Cristo alla colonna."
+            ),
+            executions=[
+                ToolExecution(
+                    tool_call=LLMToolCall(
+                        name="list_places_with_artworks",
+                        arguments={},
+                    ),
+                    result={
+                        "count": 1,
+                        "data": [
+                            {
+                                "uri": "artwork:1",
+                                "title": "Cristo alla colonna",
+                                "normalized_title": (
+                                    "cristo alla colonna"
+                                ),
+                                "artist_uri": "artist:1",
+                                "artist_name": (
+                                    "Battistello Caracciolo"
+                                ),
+                                "place_uri": "place:1",
+                                "place_name": (
+                                    "Museo nazionale "
+                                    "di Capodimonte"
+                                ),
+                                "city": "Napoli",
+                                "year": None,
+                                "completion_date": None,
+                                "medium": None,
+                                "subject": None,
+                                "description": None,
+                                "image_url": None,
+                                "source": "DBpedia",
+                            }
+                        ],
+                    },
+                )
+            ],
+        )
+
+        response = self.mapper.map(result)
+
+        self.assertEqual(
+            response.intent,
+            Intent.LIST_PLACES,
+        )
+        self.assertEqual(
+            len(response.artworks),
+            1,
+        )
+        self.assertEqual(
+            response.artworks[0].title,
+            "Cristo alla colonna",
+        )
+        self.assertEqual(
+            response.artworks[0].place_name,
+            "Museo nazionale di Capodimonte",
+        )
+
     def test_deduplicates_artworks_by_uri(self) -> None:
         artwork_data = {
             "uri": "artwork:1",

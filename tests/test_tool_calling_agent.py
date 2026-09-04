@@ -28,6 +28,24 @@ class ToolCallingAgentTest(unittest.TestCase):
             answer_renderer=self.answer_renderer,
         )
 
+    def test_system_prompt_distinguishes_artist_from_artwork(
+        self,
+    ) -> None:
+        prompt = SYSTEM_PROMPT.casefold()
+
+        self.assertIn(
+            "get_artist_information",
+            prompt,
+        )
+        self.assertIn(
+            "get_artwork_information",
+            prompt,
+        )
+        self.assertIn(
+            "nome di un artista",
+            prompt,
+        )
+
     def test_system_prompt_guides_generic_place_requests(
         self,
     ) -> None:
@@ -42,6 +60,24 @@ class ToolCallingAgentTest(unittest.TestCase):
         self.assertIn(
             "luoghi",
             SYSTEM_PROMPT.casefold(),
+        )
+
+    def test_system_prompt_guides_places_with_artworks_requests(
+        self,
+    ) -> None:
+        prompt = SYSTEM_PROMPT.casefold()
+
+        self.assertIn(
+            "list_places_with_artworks",
+            prompt,
+        )
+        self.assertIn(
+            "opere",
+            prompt,
+        )
+        self.assertIn(
+            "ciascun",
+            prompt,
         )
 
     def test_executes_tool_and_renders_grounded_answer(

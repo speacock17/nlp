@@ -114,6 +114,23 @@ KNOWLEDGE_TOOL_SCHEMAS = [
     {
         "type": "function",
         "function": {
+            "name": "list_places_with_artworks",
+            "description": (
+                "Elenca tutti i musei e luoghi presenti nel "
+                "database insieme alle opere visitabili "
+                "in ciascuno."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+                "additionalProperties": False,
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "get_artist_information",
             "description": (
                 "Recupera dal database le informazioni "
@@ -204,6 +221,8 @@ class KnowledgeToolExecutor:
                 self._list_artworks_by_place,
             "list_places":
                 self._list_places,
+            "list_places_with_artworks":
+                self._list_places_with_artworks,
             "get_artist_information":
                 self._get_artist_information,
             "get_place_information":
@@ -326,6 +345,27 @@ class KnowledgeToolExecutor:
         )
 
         return self._list_result(places)
+
+    def _list_places_with_artworks(
+        self,
+        arguments: dict[str, Any],
+    ) -> dict[str, Any]:
+        places = (
+            self._knowledge_repository
+            .list_places()
+        )
+
+        artworks = []
+
+        for place in places:
+            artworks.extend(
+                self._knowledge_repository
+                .list_artworks_by_place(
+                    place.name
+                )
+            )
+
+        return self._list_result(artworks)
 
     def _get_artist_information(
         self,

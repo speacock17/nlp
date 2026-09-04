@@ -121,9 +121,100 @@ class HybridChatbotServiceTest(unittest.TestCase):
         )
         self.fallback_service.process.assert_not_called()
 
-    def test_list_places_bypasses_agent(
+    def test_agent_prompt_includes_preliminary_intent_hint(
         self,
     ) -> None:
+        artist_result = self.service._nlu_pipeline.analyze(
+            "Parlami di Caravaggio e dimmi anche quali sue "
+            "opere posso visitare a Napoli."
+        )
+
+        artist_prompt = (
+            self.service._build_agent_prompt(
+                artist_result
+            )
+        )
+
+        self.assertIn(
+            (
+                "Intent principale rilevato dal sistema: "
+                "artist_info"
+            ),
+            artist_prompt,
+        )
+        self.assertIn(
+            "indicazione semantica",
+            artist_prompt,
+        )
+        self.assertIn(
+            "richieste aggiuntive",
+            artist_prompt,
+        )
+
+        unknown_result = self.service._nlu_pipeline.analyze(
+            "Da chi ? stato dipinto?"
+        )
+
+        unknown_prompt = (
+            self.service._build_agent_prompt(
+                unknown_result
+            )
+        )
+
+        self.assertNotIn(
+            "Intent principale rilevato dal sistema:",
+            unknown_prompt,
+        )
+
+    def test_list_places_uses_agent(
+        self,
+    ) -> None:
+        places = (
+            self.knowledge_repository.list_places()
+        )
+
+        self.agent.run.return_value = AgentResult(
+            content=(
+                "Le opere presenti nel database sono "
+                "visitabili presso: "
+                + ", ".join(
+                    place.name
+                    for place in places
+                )
+                + "."
+            ),
+            executions=[
+                ToolExecution(
+                    tool_call=LLMToolCall(
+                        name="list_places",
+                        arguments={},
+                    ),
+                    result={
+                        "count": len(places),
+                        "data": [
+                            {
+                                "uri": place.uri,
+                                "name": place.name,
+                                "normalized_name": (
+                                    place.normalized_name
+                                ),
+                                "city": place.city,
+                                "description": (
+                                    place.description
+                                ),
+                                "address": place.address,
+                                "latitude": place.latitude,
+                                "longitude": place.longitude,
+                                "image_url": place.image_url,
+                                "source": place.source,
+                            }
+                            for place in places
+                        ],
+                    },
+                )
+            ],
+        )
+
         response = self.service.process(
             session_id="session-1",
             text="Quali musei posso visitare a Napoli?",
@@ -142,7 +233,7 @@ class HybridChatbotServiceTest(unittest.TestCase):
             "Palazzo Zevallos",
             response.text,
         )
-        self.agent.run.assert_not_called()
+        self.agent.run.assert_called_once()
         self.fallback_service.process.assert_not_called()
 
         state = self.memory_repository.load_state(
@@ -153,6 +244,35 @@ class HybridChatbotServiceTest(unittest.TestCase):
             state.last_intent,
             Intent.LIST_PLACES,
         )
+
+    def test_preserves_wrong_location_inconsistency(
+        self,
+    ) -> None:
+        response = self.service.process(
+            session_id="session-1",
+            text=(
+                "Le Sette opere di Misericordia si trovano "
+                "al Museo di Capodimonte?"
+            ),
+        )
+
+        self.assertIsNotNone(
+            response.inconsistency
+        )
+        self.assertEqual(
+            response.inconsistency.inconsistency_type,
+            InconsistencyType.WRONG_LOCATION,
+        )
+        self.assertEqual(
+            response.inconsistency.correct_value,
+            "Pio Monte della Misericordia",
+        )
+        self.assertIn(
+            "Pio Monte della Misericordia",
+            response.text,
+        )
+        self.agent.run.assert_not_called()
+        self.fallback_service.process.assert_not_called()
 
     def test_preserves_deterministic_inconsistency(
         self,

@@ -28,6 +28,7 @@ class KnowledgeToolExecutorTest(unittest.TestCase):
                 "list_artworks_by_artist",
                 "list_artworks_by_place",
                 "list_places",
+                "list_places_with_artworks",
                 "get_artist_information",
                 "get_place_information",
                 "search_artworks",
@@ -243,6 +244,89 @@ class KnowledgeToolExecutorTest(unittest.TestCase):
         self.assertEqual(
             result["data"][0]["name"],
             "Museo nazionale di Capodimonte",
+        )
+
+    def test_lists_places_with_artworks(
+        self,
+    ) -> None:
+        places = [
+            Place(
+                uri="place:1",
+                name="Museo nazionale di Capodimonte",
+                normalized_name=(
+                    "museo nazionale di capodimonte"
+                ),
+                city="Napoli",
+            ),
+            Place(
+                uri="place:2",
+                name="Palazzo Zevallos",
+                normalized_name="palazzo zevallos",
+                city="Napoli",
+            ),
+        ]
+
+        capodimonte_artwork = Artwork(
+            uri="artwork:1",
+            title="Cristo alla colonna",
+            normalized_title="cristo alla colonna",
+            artist_uri="artist:1",
+            artist_name="Battistello Caracciolo",
+            place_uri="place:1",
+            place_name=(
+                "Museo nazionale di Capodimonte"
+            ),
+            city="Napoli",
+        )
+
+        zevallos_artwork = Artwork(
+            uri="artwork:2",
+            title="Martirio di sant'Orsola",
+            normalized_title=(
+                "martirio di sant orsola"
+            ),
+            artist_uri="artist:2",
+            artist_name="Caravaggio",
+            place_uri="place:2",
+            place_name="Palazzo Zevallos",
+            city="Napoli",
+        )
+
+        self.repository.list_places.return_value = places
+        self.repository.list_artworks_by_place.side_effect = [
+            [capodimonte_artwork],
+            [zevallos_artwork],
+        ]
+
+        result = self.executor.execute(
+            name="list_places_with_artworks",
+            arguments={},
+        )
+
+        self.repository.list_places.assert_called_once_with()
+        self.assertEqual(
+            self.repository
+            .list_artworks_by_place
+            .call_count,
+            2,
+        )
+        self.repository.list_artworks_by_place.assert_any_call(
+            "Museo nazionale di Capodimonte"
+        )
+        self.repository.list_artworks_by_place.assert_any_call(
+            "Palazzo Zevallos"
+        )
+
+        self.assertEqual(result["count"], 2)
+        self.assertEqual(
+            {
+                item["title"]
+                for item in result["data"]
+            },
+            {
+                "Cristo alla colonna",
+                "Martirio di sant'Orsola",
+            },
         )
 
     def test_gets_artist_information(self) -> None:

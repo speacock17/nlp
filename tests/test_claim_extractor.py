@@ -64,6 +64,24 @@ class ClaimExtractorTest(unittest.TestCase):
             "Museo nazionale di Capodimonte",
         )
 
+    def test_extracts_plural_location_claim(
+        self,
+    ) -> None:
+        claims = self._extract(
+            "Le Sette opere di Misericordia si trovano "
+            "al Museo di Capodimonte?"
+        )
+
+        self.assertEqual(len(claims), 1)
+        self.assertEqual(
+            claims[0].claim_type,
+            ClaimType.ARTWORK_LOCATION,
+        )
+        self.assertEqual(
+            claims[0].claimed_value,
+            "Museo nazionale di Capodimonte",
+        )
+
     def test_extracts_date_claim(self) -> None:
         claims = self._extract(
             "Il Martirio di sant'Orsola è del 1607?"

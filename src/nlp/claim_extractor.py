@@ -27,6 +27,7 @@ class ClaimExtractor:
 
     _LOCATION_ASSERTIONS = (
         " si trova ",
+        " si trovano ",
         " e conservata ",
         " e conservato ",
         " e esposta ",

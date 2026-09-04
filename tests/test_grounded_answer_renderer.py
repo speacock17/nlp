@@ -120,6 +120,99 @@ class GroundedAnswerRendererTest(unittest.TestCase):
             answer,
         )
 
+    def test_renders_places_with_artworks_grouped_by_place(
+        self,
+    ) -> None:
+        execution = ToolExecution(
+            tool_call=LLMToolCall(
+                name="list_places_with_artworks",
+                arguments={},
+            ),
+            result={
+                "count": 3,
+                "data": [
+                    {
+                        "uri": "artwork:1",
+                        "title": "Cristo alla colonna",
+                        "normalized_title": (
+                            "cristo alla colonna"
+                        ),
+                        "artist_uri": "artist:1",
+                        "artist_name": (
+                            "Battistello Caracciolo"
+                        ),
+                        "place_uri": "place:1",
+                        "place_name": (
+                            "Museo nazionale di Capodimonte"
+                        ),
+                        "city": "Napoli",
+                    },
+                    {
+                        "uri": "artwork:2",
+                        "title": (
+                            "Flagellazione di Cristo "
+                            "(Caravaggio)"
+                        ),
+                        "normalized_title": (
+                            "flagellazione di cristo caravaggio"
+                        ),
+                        "artist_uri": "artist:2",
+                        "artist_name": "Caravaggio",
+                        "place_uri": "place:1",
+                        "place_name": (
+                            "Museo nazionale di Capodimonte"
+                        ),
+                        "city": "Napoli",
+                    },
+                    {
+                        "uri": "artwork:3",
+                        "title": "Martirio di sant'Orsola",
+                        "normalized_title": (
+                            "martirio di sant orsola"
+                        ),
+                        "artist_uri": "artist:2",
+                        "artist_name": "Caravaggio",
+                        "place_uri": "place:2",
+                        "place_name": "Palazzo Zevallos",
+                        "city": "Napoli",
+                    },
+                ],
+            },
+        )
+
+        answer = self.renderer.render([execution])
+
+        self.assertIn(
+            "Museo nazionale di Capodimonte",
+            answer,
+        )
+        self.assertIn(
+            "Cristo alla colonna",
+            answer,
+        )
+        self.assertIn(
+            "Flagellazione di Cristo (Caravaggio)",
+            answer,
+        )
+        self.assertIn(
+            "Palazzo Zevallos",
+            answer,
+        )
+        self.assertIn(
+            "Martirio di sant'Orsola",
+            answer,
+        )
+        self.assertEqual(
+            answer.count(
+                "Museo nazionale di Capodimonte"
+            ),
+            1,
+        )
+        self.assertEqual(
+            answer.count("Palazzo Zevallos"),
+            1,
+        )
+
     def test_renders_place_list(
         self,
     ) -> None:
