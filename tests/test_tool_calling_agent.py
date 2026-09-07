@@ -46,6 +46,20 @@ class ToolCallingAgentTest(unittest.TestCase):
             prompt,
         )
 
+    def test_system_prompt_preserves_explicit_artist_names(
+        self,
+    ) -> None:
+        prompt = SYSTEM_PROMPT.casefold()
+
+        self.assertIn(
+            "non sostituire",
+            prompt,
+        )
+        self.assertIn(
+            "nome esplicitamente",
+            prompt,
+        )
+
     def test_system_prompt_guides_generic_place_requests(
         self,
     ) -> None:

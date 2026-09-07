@@ -22,8 +22,8 @@ Data del test finale: settembre 2026.
 ## Risultato complessivo
 
 - 26 tipologie di domanda testate;
-- 24 casi superati;
-- 2 limitazioni note;
+- 26 casi superati;
+- 0 casi non superati;
 - nessun crash;
 - nessuna anomalia di accesso a Neo4j;
 - memoria conversazionale funzionante;
@@ -31,8 +31,8 @@ Data del test finale: settembre 2026.
 - fuzzy matching funzionante;
 - tool calling funzionante.
 
-Le due limitazioni residue sono descritte nella sezione finale e sono
-state accettate come edge case non bloccanti per la consegna.
+Le due anomalie emerse nella precedente esecuzione di F24 e F25 sono
+state corrette e successivamente verificate end-to-end.
 
 ## Matrice
 
@@ -61,8 +61,8 @@ state accettate come edge case non bloccanti per la consegna.
 | F21 | Incongruenza data | Il Martirio di sant'Orsola è stato realizzato nel 1607? | Data corretta restituita: 1610. | SUPERATO |
 | F22 | Affermazione corretta | Il Martirio di sant'Orsola si trova a Palazzo Zevallos? | Confermata implicitamente la collocazione corretta a Palazzo Zevallos. | SUPERATO |
 | F23 | Confronto artisti | Confronta Caravaggio e Battistello Caracciolo. | Restituite informazioni grounded su entrambi gli artisti. | SUPERATO |
-| F24 | Artista fuori knowledge base | Quali opere di Artemisia Gentileschi posso vedere a Napoli? | Il sistema ha restituito erroneamente le opere di Caravaggio, recuperando un contesto precedente. | NON SUPERATO |
-| F25 | Formulazione naturale filtrata per artista | Sono a Napoli e vorrei vedere qualche quadro di Battistello Caracciolo: dove posso andare? | Il sistema ha restituito tutti i luoghi e tutte le opere invece di limitarsi a Battistello Caracciolo. | NON SUPERATO |
+| F24 | Artista fuori knowledge base | Quali opere di Artemisia Gentileschi posso vedere a Napoli? | Il nome esplicitamente richiesto viene preservato; il sistema segnala correttamente che non risultano opere di Artemisia Gentileschi nel database. | SUPERATO |
+| F25 | Formulazione naturale filtrata per artista | Sono a Napoli e vorrei vedere qualche quadro di Battistello Caracciolo: dove posso andare? | Il sistema mantiene correttamente il filtro su Battistello Caracciolo e restituisce le 8 opere associate con i relativi luoghi. | SUPERATO |
 | F26 | Fuori dominio | Qual è il miglior ristorante vicino al Museo di Capodimonte? | Domanda correttamente riconosciuta come fuori dominio, senza fornire informazioni esterne. | SUPERATO |
 
 ## Verifica della memoria conversazionale
@@ -121,33 +121,43 @@ Esempi:
 Il sistema ha utilizzato correttamente più tool oppure il tool
 composito appropriato.
 
-## Limitazioni note
+## Verifica delle anomalie precedenti
 
-### L01 - Entità esterna al dominio in presenza di contesto precedente
+### F24 - Preservazione dell'artista esplicitamente nominato
 
-Domanda:
+La precedente anomalia era dovuta alla selezione non deterministica
+dell'argomento `artist_name` da parte del modello.
 
-    Quali opere di Artemisia Gentileschi posso vedere a Napoli?
+? stata aggiunta una regola generale al prompt dell'agent:
 
-Durante il test il sistema ha recuperato erroneamente Caravaggio dal
-contesto precedente invece di indicare che Artemisia Gentileschi non
-è presente nel dominio supportato.
+- quando l'utente indica esplicitamente un artista, il nome deve
+  essere preservato negli argomenti del tool;
+- il nome non deve essere sostituito con Caravaggio o Battistello
+  Caracciolo;
+- restano valide soltanto le normalizzazioni degli alias conosciuti,
+  come Merisi -> Caravaggio.
 
-La limitazione riguarda la gestione di entità non riconosciute quando
-è disponibile un artista precedente nella memoria conversazionale.
+La correzione ? stata verificata con chiamate ripetute a Qwen e con
+un test end-to-end attraverso `HybridChatbotService`, Neo4j e memoria.
 
-### L02 - Richiesta naturale filtrata per artista
+### F25 - Richiesta naturale filtrata per artista
 
-Domanda:
+Dopo la correzione precedente, la richiesta naturale:
 
     Sono a Napoli e vorrei vedere qualche quadro di
     Battistello Caracciolo: dove posso andare?
 
-Il modello ha selezionato `list_places_with_artworks` invece di
-`list_artworks_by_artist`, restituendo anche opere di Caravaggio.
+viene interpretata correttamente tramite:
 
-La risposta rimane grounded e non contiene informazioni inventate,
-ma il filtro semantico richiesto dall'utente non viene rispettato.
+    list_artworks_by_artist
+
+con:
+
+    artist_name = Battistello Caracciolo
+    city = Napoli
+
+Il sistema restituisce le 8 opere di Battistello presenti nel database
+con i relativi luoghi.
 
 ## Valutazione
 
@@ -168,7 +178,7 @@ Il test finale copre le principali capacità richieste dal progetto:
 
 Risultato finale:
 
-    24 / 26 tipologie superate
+    26 / 26 tipologie superate
 
 Le due limitazioni residue sono edge case di interpretazione
 semantica e gestione del contesto e non compromettono il normale
@@ -182,6 +192,6 @@ La suite automatica finale è stata verificata con:
 
 Risultato:
 
-    295 test superati
+    296 test superati
     25 subtest superati
     0 fallimenti

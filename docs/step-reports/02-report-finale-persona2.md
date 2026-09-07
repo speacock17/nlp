@@ -421,7 +421,7 @@ La suite completa è stata eseguita con:
 
 Risultato finale:
 
-    295 test superati
+    296 test superati
     25 subtest superati
     0 fallimenti
 
@@ -440,7 +440,7 @@ Sono state testate 26 diverse tipologie di richiesta.
 
 Risultato:
 
-    24 / 26 tipologie superate
+    26 / 26 tipologie superate
 
 Sono state verificate:
 
@@ -614,9 +614,9 @@ consegna.
 Stato verificato:
 
     branch: persona2
-    test automatici: 295 superati
+    test automatici: 296 superati
     subtest: 25 superati
     fallimenti: 0
-    test funzionale GUI: 24/26 tipologie superate
+    test funzionale end-to-end: 26/26 tipologie superate
 
-Le limitazioni residue sono note, documentate e non bloccanti.
+Le 26 tipologie del maxi-test funzionale finale risultano superate.

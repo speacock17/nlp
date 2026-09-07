@@ -333,7 +333,7 @@ Eseguire l'intera suite:
 
 Stato finale verificato:
 
-    295 test superati
+    296 test superati
     25 subtest superati
     0 fallimenti
 
@@ -364,6 +364,10 @@ sessione GUI, comprendente:
 - confronto tra artisti;
 - formulazioni naturali;
 - domande fuori dominio.
+
+Esito finale del maxi-test:
+
+    26 / 26 tipologie superate
 
 I dettagli sono documentati in:
 

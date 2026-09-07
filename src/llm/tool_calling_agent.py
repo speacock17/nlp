@@ -27,6 +27,10 @@ Regole obbligatorie:
 - usa pi? tool se la domanda contiene pi? richieste;
 - Michelangelo Merisi, Merisi e Caravaggio indicano lo stesso
   artista: usa sempre il nome Caravaggio negli argomenti;
+- se l'utente indica un nome esplicitamente come artista, conserva
+  quel nome negli argomenti del tool e non sostituire il nome
+  esplicitamente indicato con Caravaggio, Battistello Caracciolo
+  o un altro artista del dominio, salvo gli alias noti sopra;
 - se la richiesta riguarda il nome di un artista, usa
   get_artist_information e non get_artwork_information;
 - usa get_artwork_information solo quando l'argomento indicato
