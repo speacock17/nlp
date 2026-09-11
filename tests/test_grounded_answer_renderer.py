@@ -385,7 +385,7 @@ class GroundedAnswerRendererTest(unittest.TestCase):
             "city": "Napoli",
             "year": 1610,
             "medium": "Pittura a olio",
-            "description": "Dipinto di Caravaggio.",
+            "description": "Dipinto di Caravaggio, test forza",
         }
 
         cases = [
@@ -405,10 +405,7 @@ class GroundedAnswerRendererTest(unittest.TestCase):
             ),
             (
                 "description",
-                (
-                    "Martirio di sant'Orsola: "
-                    "Dipinto di Caravaggio."
-                ),
+                "Dipinto di Caravaggio, test forza",
             ),
         ]
 

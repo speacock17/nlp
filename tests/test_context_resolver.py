@@ -339,6 +339,37 @@ class ContextResolverTest(unittest.TestCase):
             self.artist.uri,
         )
 
+    def test_possessive_artworks_follow_up_uses_current_artist(
+        self,
+    ) -> None:
+        self.memory_repository.save_state(
+            DialogueState(
+                session_id="session-1",
+                current_artist_uri=self.artist.uri,
+            )
+        )
+        result = self.pipeline.analyze(
+            "quali sono le sue opere?"
+        )
+
+        resolved = self.resolver.resolve(
+            "session-1",
+            result,
+        )
+
+        self.assertEqual(
+            resolved.intent,
+            Intent.LIST_ARTWORKS_BY_ARTIST,
+        )
+        self.assertEqual(
+            resolved.entities[0].entity_type,
+            EntityType.ARTIST,
+        )
+        self.assertEqual(
+            resolved.entities[0].uri,
+            self.artist.uri,
+        )
+
     def test_other_artworks_uses_current_artist(
         self,
     ) -> None:

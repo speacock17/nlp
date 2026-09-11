@@ -1,6 +1,7 @@
 from queue import Empty, Queue
 from threading import Thread
 import tkinter as tk
+import customtkinter as ctk
 from tkinter import scrolledtext, ttk
 
 from src.speech.exceptions import (
@@ -50,11 +51,17 @@ class ChatbotWindow:
         )
 
     def _configure_window(self) -> None:
+        ctk.set_appearance_mode("light")
+        ctk.set_default_color_theme("blue")
+
         self._root.title(
-            "Chatbot NLP"
+            "Chatbot NLP - Arte a Napoli"
         )
-        self._root.geometry("760x560")
-        self._root.minsize(620, 450)
+        self._root.geometry("980x700")
+        self._root.minsize(820, 600)
+        self._root.configure(
+            fg_color="#F4F7FB"
+        )
 
         self._root.columnconfigure(
             0,
@@ -66,173 +73,344 @@ class ChatbotWindow:
         )
 
     def _build_widgets(self) -> None:
-        header = ttk.Frame(
+        header = ctk.CTkFrame(
             self._root,
-            padding=12,
+            fg_color="#FFFFFF",
+            corner_radius=18,
+            border_width=1,
+            border_color="#E6EAF0",
         )
         header.grid(
             row=0,
             column=0,
             sticky="ew",
+            padx=24,
+            pady=(24, 16),
         )
         header.columnconfigure(
             0,
             weight=1,
         )
 
-        ttk.Label(
+        ctk.CTkLabel(
             header,
             text=(
                 "Chatbot sulle opere visitabili a Napoli"
             ),
-            font=("Segoe UI", 15, "bold"),
+            font=ctk.CTkFont(
+                family="Segoe UI",
+                size=24,
+                weight="bold",
+            ),
+            text_color="#172033",
         ).grid(
             row=0,
             column=0,
             sticky="w",
+            padx=(22, 12),
+            pady=(18, 2),
         )
 
-        engine_frame = ttk.Frame(header)
+        ctk.CTkLabel(
+            header,
+            text=(
+                "Esplora Caravaggio e Battistello "
+                "Caracciolo attraverso una conversazione."
+            ),
+            font=ctk.CTkFont(
+                family="Segoe UI",
+                size=13,
+            ),
+            text_color="#667085",
+        ).grid(
+            row=1,
+            column=0,
+            sticky="w",
+            padx=(22, 12),
+            pady=(0, 18),
+        )
+
+        engine_frame = ctk.CTkFrame(
+            header,
+            fg_color="transparent",
+        )
         engine_frame.grid(
             row=0,
             column=1,
+            rowspan=2,
             sticky="e",
+            padx=(12, 22),
         )
 
-        ttk.Label(
+        ctk.CTkLabel(
             engine_frame,
-            text="Riconoscimento:",
+            text="Riconoscimento vocale",
+            font=ctk.CTkFont(
+                family="Segoe UI",
+                size=12,
+                weight="bold",
+            ),
+            text_color="#475467",
         ).grid(
             row=0,
             column=0,
-            padx=(0, 6),
+            sticky="w",
+            pady=(0, 6),
         )
 
-        self._engine_selector = ttk.Combobox(
+        self._engine_selector = ctk.CTkSegmentedButton(
             engine_frame,
-            textvariable=self._engine_var,
             values=("whisper", "google"),
-            state="readonly",
-            width=10,
+            variable=self._engine_var,
+            command=self._on_engine_changed,
+            font=ctk.CTkFont(
+                family="Segoe UI",
+                size=12,
+                weight="bold",
+            ),
+            height=34,
+            corner_radius=10,
         )
         self._engine_selector.grid(
-            row=0,
-            column=1,
-        )
-        self._engine_selector.bind(
-            "<<ComboboxSelected>>",
-            self._on_engine_changed,
+            row=1,
+            column=0,
+            sticky="e",
         )
 
-        history_frame = ttk.Frame(
+        history_frame = ctk.CTkFrame(
             self._root,
-            padding=(12, 0, 12, 8),
+            fg_color="#FFFFFF",
+            corner_radius=18,
+            border_width=1,
+            border_color="#E6EAF0",
         )
         history_frame.grid(
             row=1,
             column=0,
             sticky="nsew",
+            padx=24,
+            pady=(0, 16),
         )
         history_frame.columnconfigure(
             0,
             weight=1,
         )
         history_frame.rowconfigure(
-            0,
+            1,
             weight=1,
         )
 
-        self._history = scrolledtext.ScrolledText(
+        ctk.CTkLabel(
             history_frame,
-            wrap=tk.WORD,
-            state=tk.DISABLED,
-            font=("Segoe UI", 11),
-            padx=10,
-            pady=10,
-        )
-        self._history.grid(
+            text="Conversazione",
+            font=ctk.CTkFont(
+                family="Segoe UI",
+                size=14,
+                weight="bold",
+            ),
+            text_color="#344054",
+        ).grid(
             row=0,
             column=0,
-            sticky="nsew",
+            sticky="w",
+            padx=20,
+            pady=(16, 8),
         )
 
-        input_frame = ttk.Frame(
+        self._history = ctk.CTkTextbox(
+            history_frame,
+            wrap="word",
+            state=tk.DISABLED,
+            font=ctk.CTkFont(
+                family="Segoe UI",
+                size=14,
+            ),
+            fg_color="#F8FAFC",
+            text_color="#172033",
+            corner_radius=12,
+            border_width=0,
+            padx=14,
+            pady=14,
+        )
+        self._history.grid(
+            row=1,
+            column=0,
+            sticky="nsew",
+            padx=16,
+            pady=(0, 16),
+        )
+
+        self._history._textbox.tag_configure(
+            "role_system",
+            foreground="#667085",
+            font=("Segoe UI", 11, "bold"),
+            spacing1=4,
+            spacing3=2,
+        )
+        self._history._textbox.tag_configure(
+            "role_user",
+            foreground="#3448A5",
+            font=("Segoe UI", 11, "bold"),
+            spacing1=4,
+            spacing3=2,
+        )
+        self._history._textbox.tag_configure(
+            "role_chatbot",
+            foreground="#287A4B",
+            font=("Segoe UI", 11, "bold"),
+            spacing1=4,
+            spacing3=2,
+        )
+
+        input_frame = ctk.CTkFrame(
             self._root,
-            padding=(12, 0, 12, 8),
+            fg_color="#FFFFFF",
+            corner_radius=18,
+            border_width=1,
+            border_color="#E6EAF0",
         )
         input_frame.grid(
             row=2,
             column=0,
             sticky="ew",
+            padx=24,
+            pady=(0, 12),
         )
         input_frame.columnconfigure(
             0,
             weight=1,
         )
 
-        self._question_entry = ttk.Entry(
+        self._question_entry = ctk.CTkEntry(
             input_frame,
             textvariable=self._question_var,
+            placeholder_text="Scrivi una domanda sulle opere...",
+            height=48,
+            corner_radius=12,
+            border_width=1,
+            border_color="#D0D5DD",
+            fg_color="#F8FAFC",
+            text_color="#172033",
+            placeholder_text_color="#98A2B3",
+            font=ctk.CTkFont(
+                family="Segoe UI",
+                size=14,
+            ),
         )
         self._question_entry.grid(
             row=0,
             column=0,
             sticky="ew",
-            padx=(0, 8),
+            padx=(16, 10),
+            pady=16,
         )
         self._question_entry.bind(
             "<Return>",
             self._on_submit_event,
         )
 
-        self._send_button = ttk.Button(
+        self._send_button = ctk.CTkButton(
             input_frame,
             text="Invia",
             command=self._submit_text,
+            width=96,
+            height=48,
+            corner_radius=12,
+            font=ctk.CTkFont(
+                family="Segoe UI",
+                size=14,
+                weight="bold",
+            ),
         )
         self._send_button.grid(
             row=0,
             column=1,
-            padx=(0, 8),
+            padx=(0, 10),
+            pady=16,
         )
 
-        self._speak_button = ttk.Button(
+        self._speak_button = ctk.CTkButton(
             input_frame,
-            text="Parla",
+            text="🎙  Parla",
             command=self._start_listening,
+            width=112,
+            height=48,
+            corner_radius=12,
+            fg_color="#EEF2FF",
+            hover_color="#E0E7FF",
+            text_color="#3448A5",
+            font=ctk.CTkFont(
+                family="Segoe UI",
+                size=14,
+                weight="bold",
+            ),
         )
         self._speak_button.grid(
             row=0,
             column=2,
+            padx=(0, 16),
+            pady=16,
         )
 
-        footer = ttk.Frame(
+        footer = ctk.CTkFrame(
             self._root,
-            padding=(12, 0, 12, 12),
+            fg_color="transparent",
         )
         footer.grid(
             row=3,
             column=0,
             sticky="ew",
+            padx=24,
+            pady=(0, 20),
         )
         footer.columnconfigure(
             0,
             weight=1,
         )
 
-        ttk.Label(
+        status_frame = ctk.CTkFrame(
             footer,
-            textvariable=self._status_var,
-        ).grid(
+            fg_color="#EAF7EF",
+            corner_radius=10,
+        )
+        status_frame.grid(
             row=0,
             column=0,
             sticky="w",
         )
 
-        ttk.Button(
+        ctk.CTkLabel(
+            status_frame,
+            textvariable=self._status_var,
+            font=ctk.CTkFont(
+                family="Segoe UI",
+                size=12,
+                weight="bold",
+            ),
+            text_color="#287A4B",
+        ).grid(
+            row=0,
+            column=0,
+            padx=12,
+            pady=7,
+        )
+
+        ctk.CTkButton(
             footer,
             text="Termina conversazione",
             command=self._on_close,
+            width=158,
+            height=36,
+            corner_radius=10,
+            fg_color="transparent",
+            hover_color="#FEECEC",
+            border_width=1,
+            border_color="#D0D5DD",
+            text_color="#667085",
+            font=ctk.CTkFont(
+                family="Segoe UI",
+                size=12,
+            ),
         ).grid(
             row=0,
             column=1,
@@ -462,10 +640,26 @@ class ChatbotWindow:
         self._history.configure(
             state=tk.NORMAL
         )
+
+        role_tag = {
+            "Sistema": "role_system",
+            "Utente": "role_user",
+            "Chatbot": "role_chatbot",
+        }.get(
+            role,
+            "role_system",
+        )
+
         self._history.insert(
             tk.END,
-            f"{role}: {text}\n\n",
+            f"{role}\n",
+            role_tag,
         )
+        self._history.insert(
+            tk.END,
+            f"{text}\n\n",
+        )
+
         self._history.configure(
             state=tk.DISABLED
         )
@@ -487,7 +681,7 @@ class ChatbotWindow:
         selector_state = (
             tk.DISABLED
             if busy
-            else "readonly"
+            else tk.NORMAL
         )
 
         self._question_entry.configure(

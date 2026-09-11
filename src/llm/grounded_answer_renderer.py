@@ -280,8 +280,11 @@ class GroundedAnswerRenderer:
         medium = self._text(
             artwork.get("medium")
         )
+        raw_description = artwork.get(
+            "description"
+        )
         description = self._text(
-            artwork.get("description")
+            raw_description
         )
         requested_information = (
             self._text(
@@ -340,11 +343,11 @@ class GroundedAnswerRenderer:
             )
 
         if requested_information == "description":
-            if description:
-                return (
-                    f"{title}: "
-                    f"{description.rstrip('.')}."
-                )
+            if isinstance(
+                raw_description,
+                str,
+            ):
+                return raw_description
 
             return (
                 f"Nel database non \u00e8 disponibile "

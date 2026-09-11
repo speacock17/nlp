@@ -5,7 +5,7 @@ import gui_main
 
 
 class GuiSttCacheIntegrationTest(unittest.TestCase):
-    @patch("gui_main.tk.Tk")
+    @patch("gui_main.ctk.CTk")
     @patch("gui_main.ChatbotWindow")
     @patch("gui_main.SpeechToTextCache")
     @patch("gui_main.TextToSpeech")

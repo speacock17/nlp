@@ -7,7 +7,7 @@ import gui_main
 
 class GuiMainTest(unittest.TestCase):
     @patch("gui_main.uuid4")
-    @patch("gui_main.tk.Tk")
+    @patch("gui_main.ctk.CTk")
     @patch("gui_main.TextToSpeech")
     @patch("gui_main.create_speech_to_text")
     @patch("gui_main.ChatbotWindow")

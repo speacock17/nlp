@@ -54,6 +54,8 @@ def classify_intent(
             "e l altro",
             "dimmi di piu",
             "continua",
+            "le sue opere",
+            "i suoi dipinti",
             "quella",
             "quello",
             "quest opera",

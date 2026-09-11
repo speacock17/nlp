@@ -1,5 +1,5 @@
 from os import getenv
-import tkinter as tk
+import customtkinter as ctk
 from uuid import uuid4
 
 from dotenv import load_dotenv
@@ -73,7 +73,7 @@ def main() -> None:
             session_id=str(uuid4()),
         )
 
-        root = tk.Tk()
+        root = ctk.CTk()
 
         ChatbotWindow(
             root=root,
@@ -96,3 +96,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

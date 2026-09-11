@@ -109,6 +109,8 @@ class ContextResolver:
         if (
             "altre" in normalized_text
             or "altri" in normalized_text
+            or "sue opere" in normalized_text
+            or "suoi dipinti" in normalized_text
         ):
             artist_entity = self._artist_entity(
                 state.current_artist_uri
