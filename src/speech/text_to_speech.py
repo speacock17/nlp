@@ -1,59 +1,62 @@
-import pyttsx3
+import asyncio
+import os
+from io import BytesIO
+from typing import Any, Callable
+
+os.environ.setdefault(
+    "PYGAME_HIDE_SUPPORT_PROMPT",
+    "1",
+)
+
+import edge_tts
+import pygame
+
+
+VOICE_ITALIAN = "it-IT-IsabellaNeural"
+VOICE_HINDI = "hi-IN-SwaraNeural"
+
+DEFAULT_VOICE = VOICE_ITALIAN
 
 
 class TextToSpeech:
     def __init__(
         self,
-        engine=None,
-        engine_factory=None,
-        rate: int = 170,
-        volume: float = 1.0,
+        voice: str = DEFAULT_VOICE,
+        communicate_factory: Callable[..., Any] = (
+            edge_tts.Communicate
+        ),
+        mixer=None,
+        clock_factory=None,
     ) -> None:
-        if not isinstance(rate, int):
+        if not isinstance(voice, str):
             raise TypeError(
-                "La velocit\u00e0 deve essere un numero intero"
+                "Il nome della voce deve essere una stringa"
             )
 
-        if rate <= 0:
+        clean_voice = voice.strip()
+
+        if not clean_voice:
             raise ValueError(
-                "La velocit\u00e0 deve essere maggiore di zero"
+                "Il nome della voce non puo essere vuoto"
             )
 
-        if not isinstance(volume, (int, float)):
+        if not callable(communicate_factory):
             raise TypeError(
-                "Il volume deve essere numerico"
+                "communicate_factory deve essere chiamabile"
             )
 
-        if not 0.0 <= volume <= 1.0:
-            raise ValueError(
-                "Il volume deve essere compreso tra 0 e 1"
-            )
-
-        if engine is not None and engine_factory is not None:
-            raise ValueError(
-                "Specificare engine oppure engine_factory, non entrambi"
-            )
-
-        if engine_factory is not None and not callable(
-            engine_factory
-        ):
-            raise TypeError(
-                "engine_factory deve essere chiamabile"
-            )
-
-        self._engine = engine
-        self._engine_factory = (
-            engine_factory
-            if engine_factory is not None
-            else pyttsx3.init
+        self._voice = clean_voice
+        self._communicate_factory = communicate_factory
+        self._mixer = (
+            mixer
+            if mixer is not None
+            else pygame.mixer
         )
-        self._rate = rate
-        self._volume = float(volume)
-
-        if self._engine is not None:
-            self._configure_engine(
-                self._engine
-            )
+        self._clock_factory = (
+            clock_factory
+            if clock_factory is not None
+            else pygame.time.Clock
+        )
 
     def speak(self, text: str) -> None:
         if not isinstance(text, str):
@@ -65,27 +68,57 @@ class TextToSpeech:
 
         if not clean_text:
             raise ValueError(
-                "Il testo da pronunciare non pu\u00f2 essere vuoto"
+                "Il testo da pronunciare non puo essere vuoto"
             )
 
-        engine = (
-            self._engine
-            if self._engine is not None
-            else self._engine_factory()
+        audio_buffer = asyncio.run(
+            self._synthesize(clean_text)
         )
 
-        if self._engine is None:
-            self._configure_engine(engine)
+        self._play(audio_buffer)
 
-        engine.say(clean_text)
-        engine.runAndWait()
+    async def _synthesize(
+        self,
+        text: str,
+    ) -> BytesIO:
+        audio_buffer = BytesIO()
 
-    def _configure_engine(self, engine) -> None:
-        engine.setProperty(
-            "rate",
-            self._rate,
+        communicate = self._communicate_factory(
+            text=text,
+            voice=self._voice,
         )
-        engine.setProperty(
-            "volume",
-            self._volume,
-        )
+
+        async for chunk in communicate.stream():
+            if chunk.get("type") == "audio":
+                audio_buffer.write(
+                    chunk["data"]
+                )
+
+        if audio_buffer.tell() == 0:
+            raise RuntimeError(
+                "Edge TTS non ha restituito audio"
+            )
+
+        audio_buffer.seek(0)
+
+        return audio_buffer
+
+    def _play(
+        self,
+        audio_buffer: BytesIO,
+    ) -> None:
+        self._mixer.init()
+
+        try:
+            self._mixer.music.load(
+                audio_buffer,
+                "mp3",
+            )
+            self._mixer.music.play()
+
+            clock = self._clock_factory()
+
+            while self._mixer.music.get_busy():
+                clock.tick(20)
+        finally:
+            self._mixer.quit()

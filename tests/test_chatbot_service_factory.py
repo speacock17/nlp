@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 from src.database.mock_knowledge_repository import (
     MockKnowledgeRepository,
@@ -66,7 +66,7 @@ class ChatbotServiceFactoryTest(unittest.TestCase):
         "src.dialogue.chatbot_service_factory."
         "OllamaLLMClient"
     )
-    def test_uses_qwen_as_default_model(
+    def test_uses_qwen_models_as_defaults(
         self,
         mocked_client_class,
     ) -> None:
@@ -90,8 +90,12 @@ class ChatbotServiceFactoryTest(unittest.TestCase):
                 llm_enabled=True,
             )
 
-        mocked_client_class.assert_called_once_with(
-            model="qwen3:8b",
+        self.assertEqual(
+            mocked_client_class.call_args_list,
+            [
+                call(model="qwen3:8b"),
+                call(model="qwen3:1.7b"),
+            ],
         )
 
     @patch.dict(

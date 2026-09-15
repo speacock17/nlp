@@ -13,6 +13,9 @@ from src.llm.knowledge_tools import (
     KNOWLEDGE_TOOL_SCHEMAS,
     KnowledgeToolExecutor,
 )
+from src.llm.naturalizing_answer_renderer import (
+    NaturalizingAnswerRenderer,
+)
 from src.llm.ollama_llm_client import OllamaLLMClient
 from src.llm.tool_calling_agent import ToolCallingAgent
 
@@ -42,25 +45,36 @@ def create_chatbot_service(
     if not enabled:
         return deterministic_service
 
-    client = (
-        llm_client
-        if llm_client is not None
-        else OllamaLLMClient(
+    if llm_client is not None:
+        client = llm_client
+        naturalizer_client = llm_client
+    else:
+        client = OllamaLLMClient(
             model=getenv(
                 "OLLAMA_MODEL",
                 "qwen3:8b",
             )
         )
-    )
+        naturalizer_client = OllamaLLMClient(
+            model=getenv(
+                "OLLAMA_NATURALIZER_MODEL",
+                "qwen3:1.7b",
+            )
+        )
 
     tool_executor = KnowledgeToolExecutor(
         knowledge_repository=knowledge_repository
+    )
+
+    answer_renderer = NaturalizingAnswerRenderer(
+        llm_client=naturalizer_client,
     )
 
     agent = ToolCallingAgent(
         llm_client=client,
         tool_executor=tool_executor,
         tool_schemas=KNOWLEDGE_TOOL_SCHEMAS,
+        answer_renderer=answer_renderer,
     )
 
     return HybridChatbotService(

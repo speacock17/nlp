@@ -247,7 +247,16 @@ class Neo4jKnowledgeRepository(KnowledgeRepository):
                 AND toLower(artwork.city) = toLower($city)
             RETURN artwork
             ORDER BY
-                artwork.year,
+                CASE
+                    WHEN artwork.year IS NULL THEN 1
+                    ELSE 0
+                END,
+                toInteger(
+                    split(
+                        toString(artwork.year),
+                        "-"
+                    )[0]
+                ),
                 artwork.normalized_title,
                 artwork.uri
             """,
@@ -280,7 +289,16 @@ class Neo4jKnowledgeRepository(KnowledgeRepository):
                   })
             RETURN artwork
             ORDER BY
-                artwork.year,
+                CASE
+                    WHEN artwork.year IS NULL THEN 1
+                    ELSE 0
+                END,
+                toInteger(
+                    split(
+                        toString(artwork.year),
+                        "-"
+                    )[0]
+                ),
                 artwork.normalized_title,
                 artwork.uri
             """,

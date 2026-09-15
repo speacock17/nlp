@@ -400,7 +400,7 @@ class GroundedAnswerRendererTest(unittest.TestCase):
                 "location",
                 (
                     "Martirio di sant'Orsola si trova "
-                    "presso Palazzo Zevallos, a Napoli."
+                    "presso Palazzo Zevallos."
                 ),
             ),
             (

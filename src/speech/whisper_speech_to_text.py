@@ -67,6 +67,12 @@ class WhisperSpeechToText:
             pause_threshold
         )
 
+        with self._microphone_factory() as source:
+            self._recognizer.adjust_for_ambient_noise(
+                source,
+                duration=0.5,
+            )
+
     def listen(
         self,
         timeout: float = 5.0,
@@ -85,11 +91,6 @@ class WhisperSpeechToText:
 
         try:
             with self._microphone_factory() as source:
-                self._recognizer.adjust_for_ambient_noise(
-                    source,
-                    duration=0.5,
-                )
-
                 audio = self._recognizer.listen(
                     source,
                     timeout=timeout,

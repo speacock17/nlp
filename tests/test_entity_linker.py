@@ -92,7 +92,7 @@ class EntityLinkerTest(unittest.TestCase):
         self.assertEqual(len(artworks), 1)
         self.assertEqual(
             artworks[0].canonical_name,
-            "Flagellazione di Cristo (Caravaggio)",
+            "Flagellazione di Cristo",
         )
 
     def test_links_place_alias(self) -> None:

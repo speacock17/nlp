@@ -49,7 +49,7 @@ class Artwork:
     place_uri: str | None = None
     place_name: str | None = None
     city: str | None = None
-    year: int | None = None
+    year: int | str | None = None
     completion_date: str | None = None
     medium: str | None = None
     subject: str | None = None

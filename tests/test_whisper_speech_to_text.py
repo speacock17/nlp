@@ -108,6 +108,26 @@ class WhisperSpeechToTextTest(unittest.TestCase):
         self.assertEqual(kwargs["language"], "it")
         self.assertTrue(kwargs["vad_filter"])
 
+    def test_calibrates_ambient_noise_only_once(
+        self,
+    ) -> None:
+        segment = MagicMock()
+        segment.text = "Ciao"
+
+        self.model.transcribe.return_value = (
+            [segment],
+            MagicMock(),
+        )
+
+        self.stt.listen()
+        self.stt.listen()
+
+        self.recognizer.adjust_for_ambient_noise\
+            .assert_called_once_with(
+                "audio-source",
+                duration=0.5,
+            )
+
     def test_rejects_empty_transcription(self) -> None:
         segment = MagicMock()
         segment.text = "   "

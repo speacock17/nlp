@@ -425,7 +425,7 @@ class HybridChatbotServiceTest(unittest.TestCase):
         first_artwork = (
             self.knowledge_repository
             .get_artwork_by_title(
-                "Flagellazione di Cristo (Caravaggio)"
+                "Flagellazione di Cristo"
             )
         )
         second_artwork = (
@@ -507,7 +507,7 @@ class HybridChatbotServiceTest(unittest.TestCase):
             prompt,
         )
         self.assertNotIn(
-            "Flagellazione di Cristo (Caravaggio)",
+            "Flagellazione di Cristo",
             prompt,
         )
         self.assertEqual(
@@ -530,7 +530,7 @@ class HybridChatbotServiceTest(unittest.TestCase):
         first_artwork = (
             self.knowledge_repository
             .get_artwork_by_title(
-                "Flagellazione di Cristo (Caravaggio)"
+                "Flagellazione di Cristo"
             )
         )
         second_artwork = (

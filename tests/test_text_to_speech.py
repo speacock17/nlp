@@ -1,99 +1,235 @@
-﻿import unittest
+import unittest
 from unittest.mock import MagicMock
 
-from src.speech.text_to_speech import TextToSpeech
+from src.speech.text_to_speech import (
+    DEFAULT_VOICE,
+    VOICE_HINDI,
+    VOICE_ITALIAN,
+    TextToSpeech,
+)
+
+
+class FakeCommunicate:
+    def __init__(
+        self,
+        chunks,
+    ) -> None:
+        self._chunks = chunks
+
+    async def stream(self):
+        for chunk in self._chunks:
+            yield chunk
 
 
 class TextToSpeechTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.engine = MagicMock()
-        self.tts = TextToSpeech(
-            engine=self.engine,
-            rate=170,
-            volume=0.9,
+        self.mixer = MagicMock()
+        self.clock = MagicMock()
+        self.clock_factory = MagicMock(
+            return_value=self.clock
         )
 
-    def test_configures_rate_and_volume(self) -> None:
-        self.engine.setProperty.assert_any_call(
-            "rate",
-            170,
-        )
-        self.engine.setProperty.assert_any_call(
-            "volume",
-            0.9,
-        )
+        self.mixer.music.get_busy.side_effect = [
+            True,
+            False,
+        ]
 
-    def test_speaks_text(self) -> None:
-        self.tts.speak(
-            "Il dipinto si trova a Napoli."
-        )
-
-        self.engine.say.assert_called_once_with(
-            "Il dipinto si trova a Napoli."
-        )
-        self.engine.runAndWait.assert_called_once_with()
-
-    def test_strips_text_before_speaking(self) -> None:
-        self.tts.speak("  Buongiorno  ")
-
-        self.engine.say.assert_called_once_with(
-            "Buongiorno"
-        )
-
-    def test_creates_new_engine_for_each_speech(self) -> None:
-        first_engine = MagicMock()
-        second_engine = MagicMock()
-        engine_factory = MagicMock(
-            side_effect=[
-                first_engine,
-                second_engine,
+    def _build_tts(
+        self,
+        voice=DEFAULT_VOICE,
+        chunks=None,
+    ):
+        if chunks is None:
+            chunks = [
+                {
+                    "type": "audio",
+                    "data": b"fake-mp3-data",
+                }
             ]
+
+        communicate_factory = MagicMock(
+            return_value=FakeCommunicate(
+                chunks
+            )
         )
 
         tts = TextToSpeech(
-            engine_factory=engine_factory,
-            rate=170,
-            volume=0.9,
+            voice=voice,
+            communicate_factory=communicate_factory,
+            mixer=self.mixer,
+            clock_factory=self.clock_factory,
         )
 
-        tts.speak("Prima frase.")
-        tts.speak("Seconda frase.")
+        return tts, communicate_factory
+
+    def test_uses_italian_voice_as_default(
+        self,
+    ) -> None:
+        self.assertEqual(
+            DEFAULT_VOICE,
+            VOICE_ITALIAN,
+        )
+        self.assertEqual(
+            VOICE_ITALIAN,
+            "it-IT-IsabellaNeural",
+        )
+
+    def test_exposes_hindi_voice(
+        self,
+    ) -> None:
+        self.assertEqual(
+            VOICE_HINDI,
+            "hi-IN-SwaraNeural",
+        )
+
+    def test_speaks_text_with_default_voice(
+        self,
+    ) -> None:
+        tts, communicate_factory = (
+            self._build_tts()
+        )
+
+        tts.speak(
+            "Il dipinto si trova a Napoli."
+        )
+
+        communicate_factory.assert_called_once_with(
+            text="Il dipinto si trova a Napoli.",
+            voice=VOICE_ITALIAN,
+        )
+
+        self.mixer.init.assert_called_once_with()
+        self.mixer.music.play.assert_called_once_with()
+        self.mixer.quit.assert_called_once_with()
+
+    def test_can_use_hindi_voice(
+        self,
+    ) -> None:
+        tts, communicate_factory = (
+            self._build_tts(
+                voice=VOICE_HINDI,
+            )
+        )
+
+        tts.speak(
+            "Questa frase viene letta da Swara."
+        )
+
+        communicate_factory.assert_called_once_with(
+            text=(
+                "Questa frase viene letta da Swara."
+            ),
+            voice=VOICE_HINDI,
+        )
+
+    def test_strips_text_before_synthesis(
+        self,
+    ) -> None:
+        tts, communicate_factory = (
+            self._build_tts()
+        )
+
+        tts.speak(
+            "  Buongiorno  "
+        )
+
+        communicate_factory.assert_called_once_with(
+            text="Buongiorno",
+            voice=VOICE_ITALIAN,
+        )
+
+    def test_loads_audio_from_memory_as_mp3(
+        self,
+    ) -> None:
+        tts, _ = self._build_tts()
+
+        tts.speak("Prova audio.")
+
+        args = (
+            self.mixer.music.load.call_args.args
+        )
 
         self.assertEqual(
-            engine_factory.call_count,
-            2,
+            args[1],
+            "mp3",
         )
-        first_engine.say.assert_called_once_with(
-            "Prima frase."
-        )
-        second_engine.say.assert_called_once_with(
-            "Seconda frase."
-        )
-        first_engine.runAndWait.assert_called_once_with()
-        second_engine.runAndWait.assert_called_once_with()
 
+        audio_buffer = args[0]
 
-    def test_rejects_empty_text(self) -> None:
+        self.assertEqual(
+            audio_buffer.getvalue(),
+            b"fake-mp3-data",
+        )
+
+    def test_waits_until_playback_finishes(
+        self,
+    ) -> None:
+        tts, _ = self._build_tts()
+
+        tts.speak("Prova audio.")
+
+        self.clock_factory.assert_called_once_with()
+        self.clock.tick.assert_called_once_with(
+            20
+        )
+
+    def test_rejects_empty_text(
+        self,
+    ) -> None:
+        tts, _ = self._build_tts()
+
         with self.assertRaises(ValueError):
-            self.tts.speak("   ")
+            tts.speak("   ")
 
-    def test_rejects_non_string_text(self) -> None:
+    def test_rejects_non_string_text(
+        self,
+    ) -> None:
+        tts, _ = self._build_tts()
+
         with self.assertRaises(TypeError):
-            self.tts.speak(None)
+            tts.speak(None)
 
-    def test_rejects_invalid_rate(self) -> None:
+    def test_rejects_empty_voice(
+        self,
+    ) -> None:
         with self.assertRaises(ValueError):
             TextToSpeech(
-                engine=self.engine,
-                rate=0,
+                voice="   ",
+                mixer=self.mixer,
             )
 
-    def test_rejects_invalid_volume(self) -> None:
-        with self.assertRaises(ValueError):
+    def test_rejects_non_string_voice(
+        self,
+    ) -> None:
+        with self.assertRaises(TypeError):
             TextToSpeech(
-                engine=self.engine,
-                volume=1.5,
+                voice=None,
+                mixer=self.mixer,
             )
+
+    def test_rejects_invalid_communicate_factory(
+        self,
+    ) -> None:
+        with self.assertRaises(TypeError):
+            TextToSpeech(
+                communicate_factory=None,
+                mixer=self.mixer,
+            )
+
+    def test_raises_when_edge_returns_no_audio(
+        self,
+    ) -> None:
+        tts, _ = self._build_tts(
+            chunks=[
+                {
+                    "type": "WordBoundary",
+                    "text": "test",
+                }
+            ]
+        )
+
+        with self.assertRaises(RuntimeError):
+            tts.speak("Prova senza audio.")
 
 
 if __name__ == "__main__":

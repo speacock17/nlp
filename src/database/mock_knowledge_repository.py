@@ -167,7 +167,11 @@ class MockKnowledgeRepository(KnowledgeRepository):
         matches.sort(
             key=lambda artwork: (
                 artwork.year is None,
-                artwork.year or 0,
+                (
+                    int(str(artwork.year).split("-", 1)[0])
+                    if artwork.year is not None
+                    else 0
+                ),
                 artwork.normalized_title,
                 artwork.uri,
             )
@@ -195,7 +199,11 @@ class MockKnowledgeRepository(KnowledgeRepository):
         matches.sort(
             key=lambda artwork: (
                 artwork.year is None,
-                artwork.year or 0,
+                (
+                    int(str(artwork.year).split("-", 1)[0])
+                    if artwork.year is not None
+                    else 0
+                ),
                 artwork.normalized_title,
                 artwork.uri,
             )
