@@ -186,7 +186,7 @@
     },
     {
       "uri": "http://it.dbpedia.org/resource/Battesimo_di_Cristo_(Battistello_Caracciolo)",
-      "title": "Battesimo di Cristo (Battistello Caracciolo)",
+      "title": "Battesimo di Cristo",
       "normalized_title": "battesimo di cristo battistello caracciolo",
       "artist_uri": "http://it.dbpedia.org/resource/Battistello_Caracciolo",
       "artist_name": "Battistello Caracciolo",
@@ -254,7 +254,7 @@
     },
     {
       "uri": "http://it.dbpedia.org/resource/Lavanda_dei_piedi_(Caracciolo)",
-      "title": "Lavanda dei piedi (Caracciolo)",
+      "title": "Lavanda dei piedi",
       "normalized_title": "lavanda dei piedi caracciolo",
       "artist_uri": "http://it.dbpedia.org/resource/Battistello_Caracciolo",
       "artist_name": "Battistello Caracciolo",
@@ -271,7 +271,7 @@
     },
     {
       "uri": "http://it.dbpedia.org/resource/Liberazione_di_san_Pietro_(Caracciolo)",
-      "title": "Liberazione di san Pietro (Caracciolo)",
+      "title": "Liberazione di san Pietro",
       "normalized_title": "liberazione di san pietro caracciolo",
       "artist_uri": "http://it.dbpedia.org/resource/Battistello_Caracciolo",
       "artist_name": "Battistello Caracciolo",
