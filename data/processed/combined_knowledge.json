@@ -135,7 +135,7 @@
   "artworks": [
     {
       "uri": "http://dbpedia.org/resource/The_Flagellation_of_Christ_(Caravaggio)",
-      "title": "Flagellazione di Cristo (Caravaggio)",
+      "title": "Flagellazione di Cristo",
       "normalized_title": "flagellazione di cristo caravaggio",
       "artist_uri": "http://dbpedia.org/resource/Caravaggio",
       "artist_name": "Caravaggio",
