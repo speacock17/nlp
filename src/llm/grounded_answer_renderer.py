@@ -314,8 +314,8 @@ class GroundedAnswerRenderer:
                     f"{place_name}"
                 )
 
-                #if city:
-                #    location += f", a {city}"
+                if city:
+                    location += f", a {city}"
 
                 return location + "."
 
@@ -364,8 +364,8 @@ class GroundedAnswerRenderer:
                 f"si trova presso {place_name}"
             )
 
-            #if city:
-            #    location += f", a {city}"
+            if city:
+                location += f", a {city}"
 
             facts.append(location)
 
@@ -528,10 +528,10 @@ class GroundedAnswerRenderer:
                 f"\u00e8 indicato come {place_type}"
             )
 
-        #if city:
-        #    facts.append(
-        #        f"si trova a {city}"
-        #    )
+        if city:
+            facts.append(
+                f"si trova a {city}"
+            )
 
         if address:
             facts.append(
@@ -575,8 +575,8 @@ class GroundedAnswerRenderer:
                 f"{title} si trova presso {place_name}"
             )
 
-            #if city:
-            #    sentence += f", a {city}"
+            if city:
+                sentence += f", a {city}"
 
             return sentence
 

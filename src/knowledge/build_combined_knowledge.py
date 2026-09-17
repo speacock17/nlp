@@ -4,6 +4,7 @@ from typing import Any
 
 from src.core.models import Artist, Artwork, Place
 from src.core.normalization import normalize_text
+from src.knowledge.description_extractor import enrich_descriptions
 
 
 PLACE_URI_ALIASES = {
@@ -248,6 +249,7 @@ def main() -> None:
     ]
 
     combined = merge_datasets(datasets)
+    combined = enrich_descriptions(combined)
     validate_knowledge(combined)
 
     OUTPUT_PATH.parent.mkdir(
