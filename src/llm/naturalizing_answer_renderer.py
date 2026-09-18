@@ -75,6 +75,11 @@ REGOLE DI STILE
 - non rendere però la risposta più lunga del necessario;
 - se l'input è già breve e naturale, modifica soltanto
   ciò che serve;
+- non usare Markdown nella risposta;
+- non usare asterischi per evidenziare titoli, nomi
+  o qualsiasi altra parte del testo;
+- i titoli delle opere devono essere restituiti come semplice
+  testo, senza corsivo, grassetto o altri marcatori;
 - se una riscrittura più elegante rischia di modificare
   anche minimamente il significato, preferisci una formulazione
   più conservativa.
@@ -91,11 +96,15 @@ ELENCHI
 - conserva TUTTI gli elementi dell'elenco;
 - conserva ogni titolo esattamente;
 - non aggiungere parole davanti ai titoli;
-- se l'input contiene un semplice elenco di titoli separati
-  da punto e virgola, DEVI trasformarlo in una frase naturale:
-  separa gli elementi con virgole e usa "e" prima dell'ultimo;
-- in questa trasformazione copia ogni elemento ESATTAMENTE,
-  senza aggiungere articoli e senza modificare i titoli;
+- quando la risposta presenta più opere, privilegia un
+  elenco puntato verticale, con una voce per opera;
+- usa il carattere "-" come punto elenco;
+- ogni voce deve contenere il titolo e le sole informazioni
+  che nell'input si riferiscono a quell'opera;
+- non comprimere più opere in una lunga frase quando possono
+  essere presentate chiaramente come elenco puntato;
+- copia ogni titolo ESATTAMENTE, senza aggiungere articoli
+  e senza modificarlo;
 - per elenchi lunghi o strutturati per luogo, privilegia
   chiarezza e fedeltà rispetto a una riscrittura aggressiva;
 - se non riesci a rendere l'elenco più naturale senza alterarlo,
@@ -173,9 +182,10 @@ Opera B si trova presso Luogo B, a Napoli;
 Opera C si trova presso Luogo C, a Napoli.
 
 Output:
-Nel database risultano tre opere di Artista X visitabili a Napoli.
-Opera A (Artista X) si trova presso Luogo A,
-Opera B presso Luogo B e Opera C presso Luogo C.
+Nel database risultano tre opere di Artista X visitabili a Napoli:
+- Opera A (Artista X) si trova presso Luogo A
+- Opera B si trova presso Luogo B
+- Opera C si trova presso Luogo C
 
 ESEMPIO 8 - OPERE IN UN LUOGO
 
@@ -184,7 +194,10 @@ Presso Museo X risultano:
 Opera A (Artista X); Opera B; Opera C.
 
 Output:
-Presso Museo X risultano Opera A (Artista X), Opera B e Opera C.
+Presso Museo X risultano:
+- Opera A (Artista X)
+- Opera B
+- Opera C
 
 ESEMPIO 9 - INFORMAZIONE MANCANTE
 
@@ -267,6 +280,7 @@ class NaturalizingAnswerRenderer:
             return grounded_content
 
         naturalized_content = response.content.strip()
+        naturalized_content = naturalized_content.replace("*", "")
 
         if not naturalized_content:
             return grounded_content
@@ -288,6 +302,24 @@ class NaturalizingAnswerRenderer:
         ):
             return False
 
+        requested_fields = (
+            tool_call.arguments.get(
+                "requested_fields"
+            )
+        )
+
+        if isinstance(requested_fields, list):
+            normalized_fields = [
+                field_name.strip().casefold()
+                for field_name in requested_fields
+                if isinstance(field_name, str)
+                and field_name.strip()
+            ]
+
+            return normalized_fields == [
+                "description"
+            ]
+
         requested_information = (
             tool_call.arguments.get(
                 "requested_information"
@@ -304,3 +336,4 @@ class NaturalizingAnswerRenderer:
             .casefold()
             == "description"
         )
+

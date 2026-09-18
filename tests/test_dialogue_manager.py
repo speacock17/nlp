@@ -323,5 +323,24 @@ class DialogueManagerTest(unittest.TestCase):
         self.assertEqual(second.turn_index, 1)
 
 
+    def test_artwork_response_updates_related_artist_context(
+        self,
+    ) -> None:
+        _, response, state = self._process(
+            "session-1",
+            (
+                "Dove si trova il Martirio "
+                "di sant'Orsola?"
+            ),
+        )
+
+        self.assertTrue(response.artworks)
+
+        self.assertEqual(
+            state.current_artist_uri,
+            response.artworks[0].artist_uri,
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -1,7 +1,11 @@
 ﻿import unittest
 
 from src.core.enums import EntityType, Intent
-from src.core.models import DialogueState, EntityMention
+from src.core.models import (
+    ConversationTurn,
+    DialogueState,
+    EntityMention,
+)
 from src.database.mock_knowledge_repository import (
     MockKnowledgeRepository,
 )
@@ -471,6 +475,473 @@ class ContextResolverTest(unittest.TestCase):
             Intent.FOLLOW_UP,
         )
         self.assertEqual(resolved.entities, [])
+
+
+    def test_unknown_possessive_artworks_uses_current_artist(
+        self,
+    ) -> None:
+        self.memory_repository.save_state(
+            DialogueState(
+                session_id="session-1",
+                current_artist_uri=self.artist.uri,
+            )
+        )
+
+        result = self.pipeline.analyze(
+            "Quali opere sue posso vedere a Napoli?"
+        )
+
+        self.assertEqual(
+            result.intent,
+            Intent.UNKNOWN,
+        )
+
+        resolved = self.resolver.resolve(
+            "session-1",
+            result,
+        )
+
+        self.assertEqual(
+            resolved.intent,
+            Intent.LIST_ARTWORKS_BY_ARTIST,
+        )
+
+        artist_entities = [
+            entity
+            for entity in resolved.entities
+            if entity.entity_type
+            == EntityType.ARTIST
+        ]
+
+        self.assertEqual(
+            len(artist_entities),
+            1,
+        )
+        self.assertEqual(
+            artist_entities[0].uri,
+            self.artist.uri,
+        )
+
+    def test_artist_pronoun_uses_current_artist(
+        self,
+    ) -> None:
+        self.memory_repository.save_state(
+            DialogueState(
+                session_id="session-1",
+                current_artist_uri=self.artist.uri,
+            )
+        )
+
+        result = self.pipeline.analyze(
+            "E lui quando e nato?"
+        )
+
+        resolved = self.resolver.resolve(
+            "session-1",
+            result,
+        )
+
+        self.assertEqual(
+            resolved.intent,
+            Intent.ARTIST_INFO,
+        )
+
+        artist_entities = [
+            entity
+            for entity in resolved.entities
+            if entity.entity_type
+            == EntityType.ARTIST
+        ]
+
+        self.assertEqual(
+            len(artist_entities),
+            1,
+        )
+        self.assertEqual(
+            artist_entities[0].uri,
+            self.artist.uri,
+        )
+
+    def test_previous_artwork_uses_recent_history_not_ordinal_list(
+        self,
+    ) -> None:
+        previous_artwork = (
+            self.knowledge_repository
+            .get_artwork_by_title(
+                "Flagellazione di Cristo"
+            )
+        )
+        current_artwork = (
+            self.knowledge_repository
+            .list_artworks_by_artist(
+                "Battistello Caracciolo"
+            )[0]
+        )
+        unrelated_first = (
+            self.knowledge_repository
+            .get_artwork_by_title(
+                "Sette opere di Misericordia"
+            )
+        )
+        unrelated_second = (
+            self.knowledge_repository
+            .get_artwork_by_title(
+                "Martirio di sant'Orsola"
+            )
+        )
+
+        self.memory_repository.save_state(
+            DialogueState(
+                session_id="session-1",
+                current_artwork_uri=(
+                    current_artwork.uri
+                ),
+                last_result_uris=[
+                    unrelated_first.uri,
+                    unrelated_second.uri,
+                ],
+            )
+        )
+
+        for index, artwork in enumerate(
+            [
+                previous_artwork,
+                current_artwork,
+            ],
+            start=1,
+        ):
+            self.memory_repository.save_turn(
+                ConversationTurn(
+                    session_id="session-1",
+                    turn_index=index,
+                    user_text=artwork.title,
+                    assistant_text="Risposta.",
+                    intent=Intent.ARTWORK_DESCRIPTION,
+                    entities=[
+                        EntityMention(
+                            entity_type=(
+                                EntityType.ARTWORK
+                            ),
+                            text=artwork.title,
+                            canonical_name=(
+                                artwork.title
+                            ),
+                            uri=artwork.uri,
+                            confidence=1.0,
+                        )
+                    ],
+                )
+            )
+
+        result = self.pipeline.analyze(
+            "Quello di prima chi l'ha dipinto?"
+        )
+
+        resolved = self.resolver.resolve(
+            "session-1",
+            result,
+        )
+
+        artwork_entities = [
+            entity
+            for entity in resolved.entities
+            if entity.entity_type
+            == EntityType.ARTWORK
+        ]
+
+        self.assertEqual(
+            len(artwork_entities),
+            1,
+        )
+        self.assertEqual(
+            artwork_entities[0].uri,
+            previous_artwork.uri,
+        )
+
+    def test_previous_artwork_falls_back_to_current_after_topic_switch(
+        self,
+    ) -> None:
+        artwork = (
+            self.knowledge_repository
+            .get_artwork_by_title(
+                "Flagellazione di Cristo"
+            )
+        )
+
+        self.memory_repository.save_state(
+            DialogueState(
+                session_id="session-1",
+                current_artwork_uri=artwork.uri,
+            )
+        )
+
+        self.memory_repository.save_turn(
+            ConversationTurn(
+                session_id="session-1",
+                turn_index=1,
+                user_text=artwork.title,
+                assistant_text="Risposta opera.",
+                intent=Intent.ARTWORK_DESCRIPTION,
+                entities=[
+                    EntityMention(
+                        entity_type=EntityType.ARTWORK,
+                        text=artwork.title,
+                        canonical_name=artwork.title,
+                        uri=artwork.uri,
+                        confidence=1.0,
+                    )
+                ],
+            )
+        )
+
+        self.memory_repository.save_turn(
+            ConversationTurn(
+                session_id="session-1",
+                turn_index=2,
+                user_text="Battistello Caracciolo",
+                assistant_text="Risposta artista.",
+                intent=Intent.ARTIST_INFO,
+                entities=[],
+            )
+        )
+
+        result = self.pipeline.analyze(
+            (
+                "Tornando al quadro di prima, "
+                "dove si trova?"
+            )
+        )
+
+        resolved = self.resolver.resolve(
+            "session-1",
+            result,
+        )
+
+        artwork_entities = [
+            entity
+            for entity in resolved.entities
+            if entity.entity_type
+            == EntityType.ARTWORK
+        ]
+
+        self.assertEqual(
+            len(artwork_entities),
+            1,
+        )
+        self.assertEqual(
+            artwork_entities[0].uri,
+            artwork.uri,
+        )
+
+    def test_other_artwork_uses_other_of_two_results(
+        self,
+    ) -> None:
+        first_artwork = (
+            self.knowledge_repository
+            .get_artwork_by_title(
+                "Flagellazione di Cristo"
+            )
+        )
+        second_artwork = (
+            self.knowledge_repository
+            .get_artwork_by_title(
+                "Martirio di sant'Orsola"
+            )
+        )
+
+        self.memory_repository.save_state(
+            DialogueState(
+                session_id="session-1",
+                current_artwork_uri=(
+                    first_artwork.uri
+                ),
+                last_result_uris=[
+                    first_artwork.uri,
+                    second_artwork.uri,
+                ],
+            )
+        )
+
+        result = self.pipeline.analyze(
+            "E l'altra di che anno e?"
+        )
+
+        resolved = self.resolver.resolve(
+            "session-1",
+            result,
+        )
+
+        artwork_entities = [
+            entity
+            for entity in resolved.entities
+            if entity.entity_type
+            == EntityType.ARTWORK
+        ]
+
+        self.assertEqual(
+            len(artwork_entities),
+            1,
+        )
+        self.assertEqual(
+            artwork_entities[0].uri,
+            second_artwork.uri,
+        )
+
+    def test_other_artwork_does_not_guess_among_three_results(
+        self,
+    ) -> None:
+        artworks = (
+            self.knowledge_repository
+            .list_artworks_by_artist(
+                "Caravaggio"
+            )
+        )
+
+        self.assertGreaterEqual(
+            len(artworks),
+            3,
+        )
+
+        self.memory_repository.save_state(
+            DialogueState(
+                session_id="session-1",
+                current_artwork_uri=(
+                    artworks[0].uri
+                ),
+                last_result_uris=[
+                    artwork.uri
+                    for artwork in artworks[:3]
+                ],
+            )
+        )
+
+        result = self.pipeline.analyze(
+            "E l'altra?"
+        )
+
+        resolved = self.resolver.resolve(
+            "session-1",
+            result,
+        )
+
+        artwork_entities = [
+            entity
+            for entity in resolved.entities
+            if entity.entity_type
+            == EntityType.ARTWORK
+        ]
+
+        self.assertEqual(
+            artwork_entities,
+            [],
+        )
+
+    def test_pair_year_reference_selects_matching_artwork(
+        self,
+    ) -> None:
+        first_artwork = (
+            self.knowledge_repository
+            .get_artwork_by_title(
+                "Flagellazione di Cristo"
+            )
+        )
+        second_artwork = (
+            self.knowledge_repository
+            .get_artwork_by_title(
+                "Martirio di sant'Orsola"
+            )
+        )
+
+        self.memory_repository.save_state(
+            DialogueState(
+                session_id="session-1",
+                current_artwork_uri=(
+                    second_artwork.uri
+                ),
+                last_result_uris=[
+                    first_artwork.uri,
+                    second_artwork.uri,
+                ],
+            )
+        )
+
+        result = self.pipeline.analyze(
+            "Quale delle due e del 1607?"
+        )
+
+        resolved = self.resolver.resolve(
+            "session-1",
+            result,
+        )
+
+        artwork_entities = [
+            entity
+            for entity in resolved.entities
+            if entity.entity_type
+            == EntityType.ARTWORK
+        ]
+
+        self.assertEqual(
+            len(artwork_entities),
+            1,
+        )
+        self.assertEqual(
+            artwork_entities[0].uri,
+            first_artwork.uri,
+        )
+
+    def test_collective_pair_reference_adds_both_artworks(
+        self,
+    ) -> None:
+        first_artwork = (
+            self.knowledge_repository
+            .get_artwork_by_title(
+                "Flagellazione di Cristo"
+            )
+        )
+        second_artwork = (
+            self.knowledge_repository
+            .get_artwork_by_title(
+                "Martirio di sant'Orsola"
+            )
+        )
+
+        self.memory_repository.save_state(
+            DialogueState(
+                session_id="session-1",
+                last_result_uris=[
+                    first_artwork.uri,
+                    second_artwork.uri,
+                ],
+            )
+        )
+
+        result = self.pipeline.analyze(
+            "Chi e l'autore di entrambe?"
+        )
+
+        resolved = self.resolver.resolve(
+            "session-1",
+            result,
+        )
+
+        artwork_entities = [
+            entity
+            for entity in resolved.entities
+            if entity.entity_type
+            == EntityType.ARTWORK
+        ]
+
+        self.assertEqual(
+            [
+                entity.uri
+                for entity in artwork_entities
+            ],
+            [
+                first_artwork.uri,
+                second_artwork.uri,
+            ],
+        )
 
 
 if __name__ == "__main__":

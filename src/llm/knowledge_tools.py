@@ -1,3 +1,4 @@
+import json
 from dataclasses import asdict
 from typing import Any, Callable
 
@@ -9,6 +10,35 @@ _ARTWORK_INFORMATION_OPTIONS = (
     "author",
     "location",
     "date",
+    "description",
+)
+
+_ARTWORK_REQUEST_FIELDS = (
+    "overview",
+    "author",
+    "location",
+    "date",
+    "medium",
+    "subject",
+    "description",
+)
+
+_ARTIST_REQUEST_FIELDS = (
+    "overview",
+    "full_name",
+    "birth_date",
+    "birth_place",
+    "death_date",
+    "death_place",
+    "description",
+)
+
+_PLACE_REQUEST_FIELDS = (
+    "overview",
+    "city",
+    "place_type",
+    "address",
+    "coordinates",
     "description",
 )
 
@@ -29,22 +59,29 @@ KNOWLEDGE_TOOL_SCHEMAS = [
                         "type": "string",
                         "description": "Titolo dell'opera",
                     },
-                    "requested_information": {
-                        "type": "string",
-                        "enum": list(
-                            _ARTWORK_INFORMATION_OPTIONS
-                        ),
+                    "requested_fields": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": list(
+                                _ARTWORK_REQUEST_FIELDS
+                            ),
+                        },
+                        "minItems": 1,
+                        "uniqueItems": True,
                         "description": (
-                            "Tipo di informazione richiesta "
-                            "dall'utente. Usare overview per "
-                            "richieste generiche come parlami "
-                            "dell'opera."
+                            "Informazioni realmente richieste "
+                            "dall'utente. Usa overview da solo "
+                            "per richieste generiche come "
+                            "'parlami dell'opera'. Per richieste "
+                            "specifiche seleziona soltanto i campi "
+                            "necessari, anche pi? di uno."
                         ),
                     },
                 },
                 "required": [
                     "artwork_title",
-                    "requested_information",
+                    "requested_fields",
                 ],
             },
         },
@@ -71,6 +108,39 @@ KNOWLEDGE_TOOL_SCHEMAS = [
                     },
                 },
                 "required": ["artist_name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "find_artworks_by_subject",
+            "description": (
+                "Trova le opere visitabili nella citta richiesta "
+                "che raffigurano o rappresentano il soggetto "
+                "indicato dall'utente, usando le descrizioni "
+                "presenti nella knowledge base."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "subject": {
+                        "type": "string",
+                        "description": "Soggetto raffigurato",
+                    },
+                    "artist_name": {
+                        "type": "string",
+                        "description": (
+                            "Nome dell'artista, se specificato"
+                        ),
+                    },
+                    "city": {
+                        "type": "string",
+                        "description": "Citta, normalmente Napoli",
+                        "default": "Napoli",
+                    },
+                },
+                "required": ["subject"],
             },
         },
     },
@@ -142,9 +212,31 @@ KNOWLEDGE_TOOL_SCHEMAS = [
                     "artist_name": {
                         "type": "string",
                         "description": "Nome dell'artista",
-                    }
+                    },
+                    "requested_fields": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": list(
+                                _ARTIST_REQUEST_FIELDS
+                            ),
+                        },
+                        "minItems": 1,
+                        "uniqueItems": True,
+                        "description": (
+                            "Informazioni realmente richieste "
+                            "sull'artista. Usa overview da solo "
+                            "per richieste generiche come "
+                            "'parlami di Caravaggio'. Per domande "
+                            "specifiche seleziona soltanto i "
+                            "campi necessari."
+                        ),
+                    },
                 },
-                "required": ["artist_name"],
+                "required": [
+                    "artist_name",
+                    "requested_fields",
+                ],
             },
         },
     },
@@ -162,9 +254,30 @@ KNOWLEDGE_TOOL_SCHEMAS = [
                     "place_name": {
                         "type": "string",
                         "description": "Nome del luogo o museo",
-                    }
+                    },
+                    "requested_fields": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": list(
+                                _PLACE_REQUEST_FIELDS
+                            ),
+                        },
+                        "minItems": 1,
+                        "uniqueItems": True,
+                        "description": (
+                            "Informazioni realmente richieste "
+                            "sul luogo. Usa overview da solo per "
+                            "richieste generiche. Per domande "
+                            "specifiche seleziona soltanto i "
+                            "campi necessari."
+                        ),
+                    },
                 },
-                "required": ["place_name"],
+                "required": [
+                    "place_name",
+                    "requested_fields",
+                ],
             },
         },
     },
@@ -202,12 +315,132 @@ KNOWLEDGE_TOOL_SCHEMAS = [
 ]
 
 
+class _SemanticArtworkFilter:
+    def __init__(self, llm_client: Any) -> None:
+        self._llm_client = llm_client
+
+    def filter(
+        self,
+        subject: str,
+        artworks: list[dict[str, str]],
+    ) -> list[dict[str, Any]]:
+        classifications = []
+
+        schema = {
+            "type": "object",
+            "properties": {
+                "matches": {
+                    "type": "boolean",
+                },
+            },
+            "required": ["matches"],
+            "additionalProperties": False,
+        }
+
+        system_message = (
+            "Sei un classificatore semantico rigoroso. "
+            "Devi stabilire se il soggetto richiesto e "
+            "realmente raffigurato nell'opera descritta. "
+            "Usa esclusivamente la descrizione fornita. "
+            "Il soggetto richiesto deve essere soddisfatto "
+            "nella sua interezza: non basta che la descrizione "
+            "raffiguri una persona o un concetto collegato. "
+            "Per esempio, 'Gesu sulla croce' richiede che Gesu "
+            "sia raffigurato sulla croce; una flagellazione o "
+            "Gesu legato a una colonna NON corrispondono. "
+            "Puoi riconoscere soltanto equivalenze semantiche "
+            "chiare e pertinenti, come Gesu e Cristo. "
+            "Non confondere soggetti religiosi differenti: "
+            "Madonna o Vergine Maria non significa "
+            "automaticamente qualsiasi scena con Gesu; "
+            "Immacolata indica una specifica raffigurazione "
+            "mariana; Spirito Santo o colomba non significano "
+            "angelo. "
+            "Una persona, un soggetto o un'opera citati "
+            "soltanto come confronto, influenza, riferimento "
+            "storico o altra opera NON sono raffigurati "
+            "nell'opera analizzata. "
+            "Rispondi true solo quando la descrizione fornisce "
+            "evidenza positiva sufficiente del soggetto "
+            "richiesto. In caso di dubbio rispondi false. "
+            "Non usare conoscenze esterne sull'opera."
+        )
+
+        for artwork in artworks:
+            response = self._llm_client.chat(
+                messages=[
+                    {
+                        "role": "system",
+                        "content": system_message,
+                    },
+                    {
+                        "role": "user",
+                        "content": json.dumps(
+                            {
+                                "subject": subject,
+                                "description":
+                                    artwork["description"],
+                            },
+                            ensure_ascii=False,
+                        ),
+                    },
+                ],
+                format=schema,
+            )
+
+            raw_content = response.content.strip()
+
+            if raw_content.startswith("```"):
+                lines = raw_content.splitlines()
+
+                if lines:
+                    lines = lines[1:]
+
+                if (
+                    lines
+                    and lines[-1].strip() == "```"
+                ):
+                    lines = lines[:-1]
+
+                raw_content = "\n".join(lines).strip()
+
+            parsed = json.loads(raw_content)
+
+            if not isinstance(parsed, dict):
+                raise ValueError(
+                    "La classificazione semantica deve "
+                    "essere un oggetto JSON"
+                )
+
+            matches = parsed.get("matches")
+
+            if not isinstance(matches, bool):
+                raise ValueError(
+                    "Il campo matches deve essere booleano"
+                )
+
+            classifications.append(
+                {
+                    "title": artwork["title"],
+                    "matches": matches,
+                }
+            )
+
+        return classifications
+
+
 class KnowledgeToolExecutor:
     def __init__(
         self,
         knowledge_repository: KnowledgeRepository,
+        semantic_llm_client: Any | None = None,
     ) -> None:
         self._knowledge_repository = knowledge_repository
+        self._semantic_filter = (
+            _SemanticArtworkFilter(semantic_llm_client)
+            if semantic_llm_client is not None
+            else None
+        )
 
         self._handlers: dict[
             str,
@@ -217,7 +450,8 @@ class KnowledgeToolExecutor:
                 self._get_artwork_information,
             "list_artworks_by_artist":
                 self._list_artworks_by_artist,
-            "list_artworks_by_place":
+            "find_artworks_by_subject":
+                self._find_artworks_by_subject,            "list_artworks_by_place":
                 self._list_artworks_by_place,
             "list_places":
                 self._list_places,
@@ -259,22 +493,14 @@ class KnowledgeToolExecutor:
             arguments,
             "artwork_title",
         )
-        requested_information = self._required_string(
-            arguments,
-            "requested_information",
-        ).casefold()
-
-        if (
-            requested_information
-            not in _ARTWORK_INFORMATION_OPTIONS
-        ):
-            raise ValueError(
-                "requested_information deve essere uno "
-                "dei valori consentiti: "
-                + ", ".join(
-                    _ARTWORK_INFORMATION_OPTIONS
-                )
-            )
+        self._validate_requested_fields(
+            arguments=arguments,
+            allowed_fields=_ARTWORK_REQUEST_FIELDS,
+            legacy_key="requested_information",
+            legacy_allowed_fields=(
+                _ARTWORK_INFORMATION_OPTIONS
+            ),
+        )
 
         artwork = (
             self._knowledge_repository
@@ -318,6 +544,135 @@ class KnowledgeToolExecutor:
         )
 
         return self._list_result(artworks)
+
+    def _find_artworks_by_subject(
+        self,
+        arguments: dict[str, Any],
+    ) -> dict[str, Any]:
+        subject = self._required_string(
+            arguments,
+            "subject",
+        )
+        artist_name_value = arguments.get("artist_name")
+
+        if artist_name_value is None:
+            artist_name = ""
+        elif isinstance(artist_name_value, str):
+            artist_name = artist_name_value.strip()
+        else:
+            raise TypeError(
+                "artist_name deve essere una stringa"
+            )
+        city = self._optional_string(
+            arguments,
+            "city",
+            default="Napoli",
+        )
+
+        if artist_name:
+            artworks = (
+                self._knowledge_repository
+                .list_artworks_by_artist(
+                    artist_name,
+                    city,
+                )
+            )
+        else:
+            places = (
+                self._knowledge_repository
+                .list_places()
+            )
+
+            artworks_by_uri = {}
+
+            for place in places:
+                if place.city.strip().casefold() != city.casefold():
+                    continue
+
+                place_artworks = (
+                    self._knowledge_repository
+                    .list_artworks_by_place(
+                        place.name
+                    )
+                )
+
+                for artwork in place_artworks:
+                    if (
+                        isinstance(artwork.city, str)
+                        and artwork.city.strip().casefold()
+                        == city.casefold()
+                    ):
+                        artworks_by_uri[artwork.uri] = artwork
+
+            artworks = list(artworks_by_uri.values())
+
+        candidates = [
+            artwork
+            for artwork in artworks
+            if (
+                isinstance(artwork.description, str)
+                and artwork.description.strip()
+            )
+        ]
+
+        if not candidates or self._semantic_filter is None:
+            result = self._list_result([])
+            result["found"] = False
+            return result
+
+        semantic_input = [
+            {
+                "title": artwork.title,
+                "description": artwork.description,
+            }
+            for artwork in candidates
+        ]
+
+        try:
+            classifications = self._semantic_filter.filter(
+                subject=subject,
+                artworks=semantic_input,
+            )
+        except (TypeError, ValueError):
+            result = self._list_result([])
+            result["found"] = False
+            return result
+
+        candidates_by_title = {
+            artwork.title.strip().casefold(): artwork
+            for artwork in candidates
+        }
+
+        matched = []
+        seen_titles = set()
+
+        for classification in classifications:
+            if not isinstance(classification, dict):
+                continue
+
+            title = classification.get("title")
+            matches = classification.get("matches")
+
+            if (
+                not isinstance(title, str)
+                or not isinstance(matches, bool)
+                or not matches
+            ):
+                continue
+
+            normalized_title = title.strip().casefold()
+            artwork = candidates_by_title.get(normalized_title)
+
+            if (
+                artwork is not None
+                and normalized_title not in seen_titles
+            ):
+                matched.append(artwork)
+                seen_titles.add(normalized_title)
+
+        result = self._list_result(matched)
+        result["found"] = bool(matched)
+        return result
 
     def _list_artworks_by_place(
         self,
@@ -376,6 +731,11 @@ class KnowledgeToolExecutor:
             "artist_name",
         )
 
+        self._validate_requested_fields(
+            arguments=arguments,
+            allowed_fields=_ARTIST_REQUEST_FIELDS,
+        )
+
         artist = (
             self._knowledge_repository
             .get_artist_by_name(artist_name)
@@ -390,6 +750,11 @@ class KnowledgeToolExecutor:
         place_name = self._required_string(
             arguments,
             "place_name",
+        )
+
+        self._validate_requested_fields(
+            arguments=arguments,
+            allowed_fields=_PLACE_REQUEST_FIELDS,
         )
 
         place = (
@@ -453,6 +818,104 @@ class KnowledgeToolExecutor:
                 for item in items
             ],
         }
+
+    @staticmethod
+    def _validate_requested_fields(
+        arguments: dict[str, Any],
+        allowed_fields: tuple[str, ...],
+        legacy_key: str | None = None,
+        legacy_allowed_fields: tuple[str, ...] | None = None,
+    ) -> tuple[str, ...]:
+        if "requested_fields" in arguments:
+            value = arguments["requested_fields"]
+
+            if not isinstance(value, list):
+                raise TypeError(
+                    "requested_fields deve essere una lista"
+                )
+
+            if not value:
+                raise ValueError(
+                    "requested_fields non pu? essere vuoto"
+                )
+
+            normalized_fields = []
+
+            for field_name in value:
+                if not isinstance(field_name, str):
+                    raise TypeError(
+                        "Ogni elemento di requested_fields "
+                        "deve essere una stringa"
+                    )
+
+                normalized_field = (
+                    field_name.strip().casefold()
+                )
+
+                if not normalized_field:
+                    raise ValueError(
+                        "requested_fields non pu? contenere "
+                        "valori vuoti"
+                    )
+
+                if normalized_field not in allowed_fields:
+                    raise ValueError(
+                        "requested_fields contiene un valore "
+                        "non consentito: "
+                        f"{field_name}"
+                    )
+
+                if normalized_field in normalized_fields:
+                    raise ValueError(
+                        "requested_fields non pu? contenere "
+                        "duplicati"
+                    )
+
+                normalized_fields.append(
+                    normalized_field
+                )
+
+            if (
+                "overview" in normalized_fields
+                and len(normalized_fields) > 1
+            ):
+                raise ValueError(
+                    "overview deve essere usato da solo"
+                )
+
+            return tuple(normalized_fields)
+
+        if legacy_key is not None and legacy_key in arguments:
+            legacy_value = arguments[legacy_key]
+
+            if not isinstance(legacy_value, str):
+                raise TypeError(
+                    f"{legacy_key} deve essere una stringa"
+                )
+
+            normalized_legacy = (
+                legacy_value.strip().casefold()
+            )
+
+            allowed_legacy = (
+                legacy_allowed_fields
+                if legacy_allowed_fields is not None
+                else allowed_fields
+            )
+
+            if normalized_legacy not in allowed_legacy:
+                raise ValueError(
+                    f"{legacy_key} deve essere uno dei "
+                    "valori consentiti: "
+                    + ", ".join(allowed_legacy)
+                )
+
+            return (normalized_legacy,)
+
+        # Compatibilit? con chiamate interne precedenti:
+        # in assenza del nuovo argomento, la richiesta
+        # viene trattata come panoramica generale.
+        return ("overview",)
 
     @staticmethod
     def _required_string(

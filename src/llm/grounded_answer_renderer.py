@@ -35,6 +35,8 @@ class GroundedAnswerRenderer:
         handlers = {
             "list_artworks_by_artist":
                 self._render_artworks_by_artist,
+            "find_artworks_by_subject":
+                self._render_artworks_by_subject,
             "list_artworks_by_place":
                 self._render_artworks_by_place,
             "list_places":
@@ -107,6 +109,56 @@ class GroundedAnswerRenderer:
             + "."
         )
 
+    def _render_artworks_by_subject(
+        self,
+        arguments: dict[str, Any],
+        result: dict[str, Any],
+    ) -> str:
+        subject = self._text(
+            arguments.get("subject")
+        )
+        artist_name = self._text(
+            arguments.get("artist_name")
+        )
+        artworks = self._data_list(result)
+
+        if not artworks:
+            if artist_name:
+                return (
+                    f"Non ho trovato nel database opere di "
+                    f"{artist_name} che raffigurano "
+                    f"{subject or 'questo soggetto'}."
+                )
+
+            return (
+                f"Non ho trovato nel database opere che "
+                f"raffigurano "
+                f"{subject or 'questo soggetto'}."
+            )
+
+        introduction = (
+            f"Nel database risultano {len(artworks)} opere"
+        )
+
+        if artist_name:
+            introduction += f" di {artist_name}"
+
+        introduction += (
+            f" che raffigurano "
+            f"{subject or 'il soggetto richiesto'}"
+        )
+
+        details = [
+            self._artwork_location_sentence(artwork)
+            for artwork in artworks
+        ]
+
+        return (
+            introduction
+            + ": "
+            + "; ".join(details)
+            + "."
+        )
     def _render_artworks_by_place(
         self,
         arguments: dict[str, Any],
@@ -262,16 +314,12 @@ class GroundedAnswerRenderer:
             self._text(artwork.get("title"))
             or "L'opera"
         )
-        facts = []
 
         artist_name = self._text(
             artwork.get("artist_name")
         )
         place_name = self._text(
             artwork.get("place_name")
-        )
-        city = self._text(
-            artwork.get("city")
         )
         year = artwork.get("year")
         completion_date = self._text(
@@ -280,54 +328,96 @@ class GroundedAnswerRenderer:
         medium = self._text(
             artwork.get("medium")
         )
+        subject = self._text(
+            artwork.get("subject")
+        )
         raw_description = artwork.get(
             "description"
         )
         description = self._text(
             raw_description
         )
-        requested_information = (
-            self._text(
-                arguments.get(
-                    "requested_information"
-                )
-            )
-            or "overview"
+
+        requested_fields = self._requested_fields(
+            arguments=arguments,
+            legacy_key="requested_information",
         )
 
-        if requested_information == "author":
+        if requested_fields == ("overview",):
+            facts = []
+
+            if artist_name:
+                facts.append(
+                    f"è attribuita a {artist_name}"
+                )
+
+            if place_name:
+                facts.append(
+                    f"si trova presso {place_name}"
+                )
+
+            if year is not None:
+                facts.append(
+                    f"è datata {year}"
+                )
+            elif completion_date:
+                facts.append(
+                    f"ha data di completamento "
+                    f"{completion_date}"
+                )
+
+            if medium:
+                facts.append(
+                    f"la tecnica indicata è {medium}"
+                )
+
+            if description:
+                description_text = description.strip()
+                first_sentence = description_text.partition(".")[0].strip()
+
+                if first_sentence:
+                    facts.append(first_sentence)
+
+            if not facts:
+                return (
+                    f"Nel database è presente {title}, "
+                    f"ma non risultano altri dettagli."
+                )
+
+            return (
+                f"{title}: "
+                + "; ".join(facts)
+                + "."
+            )
+
+        if requested_fields == ("author",):
             if artist_name:
                 return (
                     f"{title} "
-                    f"\u00e8 attribuita a {artist_name}."
+                    f"è attribuita a {artist_name}."
                 )
 
             return (
-                f"Nel database non \u00e8 disponibile "
+                f"Nel database non è disponibile "
                 f"l'autore di {title}."
             )
 
-        if requested_information == "location":
+        if requested_fields == ("location",):
             if place_name:
-                location = (
+                return (
                     f"{title} si trova presso "
-                    f"{place_name}"
+                    f"{place_name}."
                 )
 
-                if city:
-                    location += f", a {city}"
-
-                return location + "."
-
             return (
-                f"Nel database non \u00e8 disponibile "
+                f"Nel database non è disponibile "
                 f"il luogo in cui si trova {title}."
             )
 
-        if requested_information == "date":
+        if requested_fields == ("date",):
             if year is not None:
                 return (
-                    f"{title} \u00e8 stato realizzato "
+                    f"{title} è stato realizzato "
                     f"nel {year}."
                 )
 
@@ -338,59 +428,92 @@ class GroundedAnswerRenderer:
                 )
 
             return (
-                f"Nel database non \u00e8 disponibile "
+                f"Nel database non è disponibile "
                 f"la data di realizzazione di {title}."
             )
 
-        if requested_information == "description":
-            if isinstance(
-                raw_description,
-                str,
-            ):
+        if requested_fields == ("description",):
+            if isinstance(raw_description, str):
                 return raw_description
 
             return (
-                f"Nel database non \u00e8 disponibile "
+                f"Nel database non è disponibile "
                 f"una descrizione di {title}."
             )
 
-        if artist_name:
-            facts.append(
-                f"\u00e8 attribuita a {artist_name}"
+        if requested_fields == ("medium",):
+            if medium:
+                return (
+                    f"La tecnica indicata per {title} "
+                    f"è {medium}."
+                )
+
+            return (
+                f"Nel database non è disponibile "
+                f"la tecnica di {title}."
             )
 
-        if place_name:
-            location = (
-                f"si trova presso {place_name}"
+        if requested_fields == ("subject",):
+            if subject:
+                return (
+                    f"Il soggetto indicato per {title} "
+                    f"è {subject}."
+                )
+
+            return (
+                f"Nel database non è disponibile "
+                f"il soggetto di {title}."
             )
 
-            if city:
-                location += f", a {city}"
+        facts = []
 
-            facts.append(location)
+        for field_name in requested_fields:
+            if field_name == "author" and artist_name:
+                facts.append(
+                    f"è attribuita a {artist_name}"
+                )
 
-        if year is not None:
-            facts.append(
-                f"\u00e8 datata {year}"
-            )
-        elif completion_date:
-            facts.append(
-                f"ha data di completamento "
-                f"{completion_date}"
-            )
+            elif (
+                field_name == "location"
+                and place_name
+            ):
+                facts.append(
+                    f"si trova presso {place_name}"
+                )
 
-        if medium:
-            facts.append(
-                f"la tecnica indicata \u00e8 {medium}"
-            )
+            elif field_name == "date":
+                if year is not None:
+                    facts.append(
+                        f"è stata realizzata nel {year}"
+                    )
+                elif completion_date:
+                    facts.append(
+                        f"ha data di completamento "
+                        f"{completion_date}"
+                    )
 
-        if description:
-            facts.append(description.rstrip("."))
+            elif field_name == "medium" and medium:
+                facts.append(
+                    f"la tecnica indicata è {medium}"
+                )
+
+            elif field_name == "subject" and subject:
+                facts.append(
+                    f"il soggetto indicato è {subject}"
+                )
+
+            elif (
+                field_name == "description"
+                and description
+            ):
+                facts.append(
+                    description.rstrip(".")
+                )
 
         if not facts:
             return (
-                f"Nel database \u00e8 presente {title}, "
-                f"ma non risultano altri dettagli."
+                f"Nel database non sono disponibili "
+                f"le informazioni richieste su {title}."
             )
 
         return (
@@ -421,7 +544,6 @@ class GroundedAnswerRenderer:
             self._text(artist.get("name"))
             or "L'artista"
         )
-        facts = []
 
         full_name = self._text(
             artist.get("full_name")
@@ -442,42 +564,165 @@ class GroundedAnswerRenderer:
             artist.get("description")
         )
 
-        if full_name and full_name != name:
-            facts.append(
-                f"il nome completo \u00e8 {full_name}"
+        requested_fields = self._requested_fields(
+            arguments
+        )
+
+        if requested_fields == ("birth_date",):
+            if birth_date:
+                return (
+                    f"{name} nacque il {birth_date}."
+                )
+
+            return (
+                f"Nel database non è disponibile "
+                f"la data di nascita di {name}."
             )
 
-        if birth_date:
-            birth_fact = f"nacque il {birth_date}"
-
+        if requested_fields == ("birth_place",):
             if birth_place:
-                birth_fact += f" a {birth_place}"
+                return (
+                    f"{name} nacque a {birth_place}."
+                )
 
-            facts.append(birth_fact)
-        elif birth_place:
-            facts.append(
-                f"nacque a {birth_place}"
+            return (
+                f"Nel database non è disponibile "
+                f"il luogo di nascita di {name}."
             )
 
-        if death_date:
-            death_fact = f"mor\u00ec il {death_date}"
+        if requested_fields == ("death_date",):
+            if death_date:
+                return (
+                    f"{name} morì il {death_date}."
+                )
 
+            return (
+                f"Nel database non è disponibile "
+                f"la data di morte di {name}."
+            )
+
+        if requested_fields == ("death_place",):
             if death_place:
-                death_fact += f" a {death_place}"
+                return (
+                    f"{name} morì a {death_place}."
+                )
 
-            facts.append(death_fact)
-        elif death_place:
-            facts.append(
-                f"mor\u00ec a {death_place}"
+            return (
+                f"Nel database non è disponibile "
+                f"il luogo di morte di {name}."
             )
 
-        if description:
-            facts.append(description.rstrip("."))
+        if requested_fields == ("full_name",):
+            if full_name:
+                return (
+                    f"Il nome completo di {name} "
+                    f"è {full_name}."
+                )
+
+            return (
+                f"Nel database non è disponibile "
+                f"il nome completo di {name}."
+            )
+
+        if requested_fields == ("description",):
+            if description:
+                return description
+
+            return (
+                f"Nel database non è disponibile "
+                f"una descrizione di {name}."
+            )
+
+        if requested_fields == (
+            "birth_date",
+            "birth_place",
+        ):
+            if birth_date and birth_place:
+                return (
+                    f"{name} nacque il {birth_date} "
+                    f"a {birth_place}."
+                )
+
+        facts = []
+
+        fields_to_render = (
+            (
+                "full_name",
+                (
+                    f"il nome completo è {full_name}"
+                    if full_name
+                    else None
+                ),
+            ),
+            (
+                "birth_date",
+                (
+                    f"nacque il {birth_date}"
+                    if birth_date
+                    else None
+                ),
+            ),
+            (
+                "birth_place",
+                (
+                    f"il luogo di nascita è "
+                    f"{birth_place}"
+                    if birth_place
+                    else None
+                ),
+            ),
+            (
+                "death_date",
+                (
+                    f"morì il {death_date}"
+                    if death_date
+                    else None
+                ),
+            ),
+            (
+                "death_place",
+                (
+                    f"il luogo di morte è "
+                    f"{death_place}"
+                    if death_place
+                    else None
+                ),
+            ),
+            (
+                "description",
+                (
+                    description.rstrip(".")
+                    if description
+                    else None
+                ),
+            ),
+        )
+
+        if requested_fields == ("overview",):
+            selected_fields = {
+                "full_name",
+                "birth_date",
+                "birth_place",
+                "death_date",
+                "death_place",
+                "description",
+            }
+        else:
+            selected_fields = set(
+                requested_fields
+            )
+
+        for field_name, fact in fields_to_render:
+            if (
+                field_name in selected_fields
+                and fact
+            ):
+                facts.append(fact)
 
         if not facts:
             return (
-                f"Nel database \u00e8 presente {name}, "
-                f"ma non risultano altri dettagli."
+                f"Nel database è presente {name}, "
+                f"ma non risultano i dettagli richiesti."
             )
 
         return (
@@ -508,7 +753,6 @@ class GroundedAnswerRenderer:
             self._text(place.get("name"))
             or "Il luogo"
         )
-        facts = []
 
         city = self._text(
             place.get("city")
@@ -522,29 +766,133 @@ class GroundedAnswerRenderer:
         description = self._text(
             place.get("description")
         )
+        latitude = place.get("latitude")
+        longitude = place.get("longitude")
 
-        if place_type:
-            facts.append(
-                f"\u00e8 indicato come {place_type}"
+        requested_fields = self._requested_fields(
+            arguments
+        )
+
+        if requested_fields == ("city",):
+            if city:
+                return (
+                    f"{name} si trova a {city}."
+                )
+
+            return (
+                f"Nel database non è disponibile "
+                f"la città di {name}."
             )
 
-        if city:
+        if requested_fields == ("place_type",):
+            if place_type:
+                return (
+                    f"{name} è indicato come "
+                    f"{place_type}."
+                )
+
+            return (
+                f"Nel database non è disponibile "
+                f"la tipologia di {name}."
+            )
+
+        if requested_fields == ("address",):
+            if address:
+                return (
+                    f"L'indirizzo di {name} "
+                    f"è {address}."
+                )
+
+            return (
+                f"Nel database non è disponibile "
+                f"l'indirizzo di {name}."
+            )
+
+        if requested_fields == ("coordinates",):
+            if (
+                latitude is not None
+                and longitude is not None
+            ):
+                return (
+                    f"Le coordinate di {name} sono "
+                    f"{latitude}, {longitude}."
+                )
+
+            return (
+                f"Nel database non sono disponibili "
+                f"le coordinate di {name}."
+            )
+
+        if requested_fields == ("description",):
+            if description:
+                return description
+
+            return (
+                f"Nel database non è disponibile "
+                f"una descrizione di {name}."
+            )
+
+        facts = []
+
+        if requested_fields == ("overview",):
+            selected_fields = {
+                "city",
+                "place_type",
+                "address",
+                "coordinates",
+                "description",
+            }
+        else:
+            selected_fields = set(
+                requested_fields
+            )
+
+        if (
+            "city" in selected_fields
+            and city
+        ):
             facts.append(
                 f"si trova a {city}"
             )
 
-        if address:
+        if (
+            "place_type" in selected_fields
+            and place_type
+        ):
             facts.append(
-                f"l'indirizzo \u00e8 {address}"
+                f"è indicato come {place_type}"
             )
 
-        if description:
-            facts.append(description.rstrip("."))
+        if (
+            "address" in selected_fields
+            and address
+        ):
+            facts.append(
+                f"l'indirizzo è {address}"
+            )
+
+        if (
+            "coordinates" in selected_fields
+            and latitude is not None
+            and longitude is not None
+        ):
+            facts.append(
+                f"le coordinate sono "
+                f"{latitude}, {longitude}"
+            )
+
+        if (
+            "description" in selected_fields
+            and description
+        ):
+            facts.append(
+                description.rstrip(".")
+            )
 
         if not facts:
             return (
-                f"Nel database \u00e8 presente {name}, "
-                f"ma non risultano altri dettagli."
+                f"Nel database è presente {name}, "
+                f"ma non risultano i dettagli richiesti."
             )
 
         return (
@@ -552,6 +900,43 @@ class GroundedAnswerRenderer:
             + "; ".join(facts)
             + "."
         )
+
+    @staticmethod
+    def _requested_fields(
+        arguments: dict[str, Any],
+        legacy_key: str | None = None,
+    ) -> tuple[str, ...]:
+        value = arguments.get(
+            "requested_fields"
+        )
+
+        if isinstance(value, list):
+            fields = tuple(
+                item.strip().casefold()
+                for item in value
+                if isinstance(item, str)
+                and item.strip()
+            )
+
+            if fields:
+                return fields
+
+        if legacy_key is not None:
+            legacy_value = arguments.get(
+                legacy_key
+            )
+
+            if (
+                isinstance(legacy_value, str)
+                and legacy_value.strip()
+            ):
+                return (
+                    legacy_value
+                    .strip()
+                    .casefold(),
+                )
+
+        return ("overview",)
 
     @staticmethod
     def _artwork_location_sentence(
@@ -575,8 +960,8 @@ class GroundedAnswerRenderer:
                 f"{title} si trova presso {place_name}"
             )
 
-            if city:
-                sentence += f", a {city}"
+            #if city:
+            #    sentence += f", a {city}"
 
             return sentence
 

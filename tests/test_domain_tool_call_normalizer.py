@@ -137,5 +137,77 @@ class DomainToolCallNormalizerTest(unittest.TestCase):
         self.assertEqual(result, tool_call)
 
 
+    def test_keeps_only_overview_for_artist_information(
+        self,
+    ) -> None:
+        tool_call = LLMToolCall(
+            name="get_artist_information",
+            arguments={
+                "artist_name": "Battistello Caracciolo",
+                "requested_fields": [
+                    "overview",
+                    "full_name",
+                    "birth_date",
+                    "birth_place",
+                    "death_date",
+                    "death_place",
+                    "description",
+                ],
+            },
+        )
+
+        result = self.normalizer.normalize(
+            user_text=(
+                "Parlami di Battistello Caracciolo."
+            ),
+            tool_call=tool_call,
+        )
+
+        self.assertEqual(
+            result.arguments["requested_fields"],
+            ["overview"],
+        )
+        self.assertEqual(
+            result.arguments["artist_name"],
+            "Battistello Caracciolo",
+        )
+
+    def test_keeps_only_overview_for_artwork_information(
+        self,
+    ) -> None:
+        tool_call = LLMToolCall(
+            name="get_artwork_information",
+            arguments={
+                "artwork_title": (
+                    "Flagellazione di Cristo"
+                ),
+                "requested_fields": [
+                    "overview",
+                    "author",
+                    "date",
+                    "medium",
+                    "location",
+                ],
+            },
+        )
+
+        result = self.normalizer.normalize(
+            user_text=(
+                "Parlami della Flagellazione di Cristo."
+            ),
+            tool_call=tool_call,
+        )
+
+        self.assertEqual(
+            result.arguments["requested_fields"],
+            ["overview"],
+        )
+        self.assertEqual(
+            result.arguments["artwork_title"],
+            "Flagellazione di Cristo",
+        )
+
+
+
 if __name__ == "__main__":
     unittest.main()

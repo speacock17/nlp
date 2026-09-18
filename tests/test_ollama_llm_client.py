@@ -45,6 +45,7 @@ class OllamaLLMClientTest(unittest.TestCase):
             ],
             tools=None,
             think=False,
+            format=None,
             keep_alive="30m",
         )
 
@@ -77,6 +78,7 @@ class OllamaLLMClientTest(unittest.TestCase):
             ],
             tools=None,
             think=False,
+            format=None,
             keep_alive="30m",
         )
 
@@ -114,6 +116,7 @@ class OllamaLLMClientTest(unittest.TestCase):
             ],
             tools=None,
             think=False,
+            format=None,
             keep_alive="30m",
         )
 
@@ -165,6 +168,54 @@ class OllamaLLMClientTest(unittest.TestCase):
                     },
                 )
             ],
+        )
+
+    def test_forwards_structured_output_format(
+        self,
+    ) -> None:
+        response = MagicMock()
+        response.message.content = '{"matches": true}'
+        response.message.tool_calls = None
+        self.chat_function.return_value = response
+
+        schema = {
+            "type": "object",
+            "properties": {
+                "matches": {
+                    "type": "boolean",
+                },
+            },
+            "required": ["matches"],
+            "additionalProperties": False,
+        }
+
+        result = self.client.chat(
+            messages=[
+                {
+                    "role": "user",
+                    "content": "Classifica la descrizione.",
+                }
+            ],
+            format=schema,
+        )
+
+        self.assertEqual(
+            result.content,
+            '{"matches": true}',
+        )
+
+        self.chat_function.assert_called_once_with(
+            model="llama3.2:3b",
+            messages=[
+                {
+                    "role": "user",
+                    "content": "Classifica la descrizione.",
+                }
+            ],
+            tools=None,
+            think=False,
+            format=schema,
+            keep_alive="30m",
         )
 
     def test_rejects_empty_model_name(self) -> None:

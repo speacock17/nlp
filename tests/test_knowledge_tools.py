@@ -5,6 +5,7 @@ from src.core.models import Artist, Artwork, Place
 from src.llm.knowledge_tools import (
     KNOWLEDGE_TOOL_SCHEMAS,
     KnowledgeToolExecutor,
+    _SemanticArtworkFilter,
 )
 
 
@@ -26,6 +27,7 @@ class KnowledgeToolExecutorTest(unittest.TestCase):
             {
                 "get_artwork_information",
                 "list_artworks_by_artist",
+                "find_artworks_by_subject",
                 "list_artworks_by_place",
                 "list_places",
                 "list_places_with_artworks",
@@ -35,7 +37,7 @@ class KnowledgeToolExecutorTest(unittest.TestCase):
             },
         )
 
-    def test_artwork_information_schema_requires_requested_information(
+    def test_artwork_schema_does_not_require_legacy_requested_information(
         self,
     ) -> None:
         schema = next(
@@ -48,30 +50,126 @@ class KnowledgeToolExecutorTest(unittest.TestCase):
         )
 
         parameters = schema["parameters"]
-        requested_information = (
-            parameters["properties"][
-                "requested_information"
-            ]
+
+        self.assertIn(
+            "requested_fields",
+            parameters["required"],
+        )
+        self.assertNotIn(
+            "requested_information",
+            parameters["required"],
         )
 
-        self.assertEqual(
-            requested_information["type"],
-            "string",
-        )
-        self.assertEqual(
-            requested_information["enum"],
-            [
+    def test_information_tools_expose_requested_fields(
+        self,
+    ) -> None:
+        expected_fields = {
+            "get_artwork_information": [
                 "overview",
                 "author",
                 "location",
                 "date",
+                "medium",
+                "subject",
                 "description",
             ],
-        )
-        self.assertIn(
-            "requested_information",
-            parameters["required"],
-        )
+            "get_artist_information": [
+                "overview",
+                "full_name",
+                "birth_date",
+                "birth_place",
+                "death_date",
+                "death_place",
+                "description",
+            ],
+            "get_place_information": [
+                "overview",
+                "city",
+                "place_type",
+                "address",
+                "coordinates",
+                "description",
+            ],
+        }
+
+        for tool_name, expected in expected_fields.items():
+            schema = next(
+                tool["function"]
+                for tool in KNOWLEDGE_TOOL_SCHEMAS
+                if tool["function"]["name"] == tool_name
+            )
+
+            parameters = schema["parameters"]
+            requested_fields = (
+                parameters["properties"]["requested_fields"]
+            )
+
+            self.assertEqual(
+                requested_fields["type"],
+                "array",
+            )
+            self.assertEqual(
+                requested_fields["items"]["type"],
+                "string",
+            )
+            self.assertEqual(
+                requested_fields["items"]["enum"],
+                expected,
+            )
+            self.assertIn(
+                "requested_fields",
+                parameters["required"],
+            )
+
+    def test_validates_requested_fields(
+        self,
+    ) -> None:
+        cases = [
+            (
+                "get_artwork_information",
+                {
+                    "artwork_title": "Flagellazione di Cristo",
+                    "requested_fields": ["invented_field"],
+                },
+            ),
+            (
+                "get_artist_information",
+                {
+                    "artist_name": "Caravaggio",
+                    "requested_fields": ["invented_field"],
+                },
+            ),
+            (
+                "get_place_information",
+                {
+                    "place_name": (
+                        "Museo nazionale di Capodimonte"
+                    ),
+                    "requested_fields": ["invented_field"],
+                },
+            ),
+        ]
+
+        for tool_name, arguments in cases:
+            with self.subTest(tool_name=tool_name):
+                with self.assertRaises(ValueError):
+                    self.executor.execute(
+                        name=tool_name,
+                        arguments=arguments,
+                    )
+
+    def test_rejects_empty_requested_fields(
+        self,
+    ) -> None:
+        with self.assertRaises(ValueError):
+            self.executor.execute(
+                name="get_artist_information",
+                arguments={
+                    "artist_name": "Caravaggio",
+                    "requested_fields": [],
+                },
+            )
+
 
     def test_requires_valid_requested_information(
         self,
@@ -376,5 +474,256 @@ class KnowledgeToolExecutorTest(unittest.TestCase):
             )
 
 
+    def test_find_artworks_by_subject_without_artist(
+        self,
+    ) -> None:
+        semantic_filter = MagicMock()
+        semantic_filter.filter.return_value = [
+            {
+                "title": "Liberazione di san Pietro",
+                "matches": True,
+            },
+            {
+                "title": "Cristo alla colonna",
+                "matches": False,
+            },
+        ]
+
+        place = Place(
+            uri="place:capodimonte",
+            name="Museo di Capodimonte",
+            normalized_name="museo di capodimonte",
+            city="Napoli",
+        )
+
+        artwork_1 = Artwork(
+            uri="artwork:san-pietro",
+            title="Liberazione di san Pietro",
+            normalized_title="liberazione di san pietro",
+            artist_uri="artist:battistello",
+            artist_name="Battistello Caracciolo",
+            place_name="Museo di Capodimonte",
+            city="Napoli",
+            description=(
+                "La scena rappresenta la liberazione "
+                "di San Pietro."
+            ),
+        )
+
+        artwork_2 = Artwork(
+            uri="artwork:cristo-colonna",
+            title="Cristo alla colonna",
+            normalized_title="cristo alla colonna",
+            artist_uri="artist:battistello",
+            artist_name="Battistello Caracciolo",
+            place_name="Museo di Capodimonte",
+            city="Napoli",
+            description=(
+                "Cristo e raffigurato legato a una colonna."
+            ),
+        )
+
+        self.repository.list_places.return_value = [place]
+        self.repository.list_artworks_by_place.return_value = [
+            artwork_1,
+            artwork_2,
+        ]
+        self.executor._semantic_filter = semantic_filter
+
+        result = self.executor.execute(
+            name="find_artworks_by_subject",
+            arguments={
+                "subject": "San Pietro",
+                "city": "Napoli",
+            },
+        )
+
+        self.assertEqual(result["count"], 1)
+        self.assertEqual(
+            result["data"][0]["title"],
+            "Liberazione di san Pietro",
+        )
+
+        self.repository.list_artworks_by_place.assert_called_once_with(
+            "Museo di Capodimonte"
+        )
+
+    def test_find_artworks_by_subject_uses_semantic_filter(self) -> None:
+        semantic_filter = MagicMock()
+        semantic_filter.filter.return_value = [
+            {
+                "title": "Cristo alla colonna",
+                "matches": True,
+            },
+            {
+                "title": "Liberazione di san Pietro",
+                "matches": False,
+            },
+            {
+                "title": "Opera inventata",
+                "matches": True,
+            },
+        ]
+
+        artwork_1 = Artwork(
+            uri="artwork:cristo-colonna",
+            title="Cristo alla colonna",
+            normalized_title="cristo alla colonna",
+            artist_uri="artist:battistello",
+            artist_name="Battistello Caracciolo",
+            place_name="Museo di Capodimonte",
+            city="Napoli",
+            description="Cristo è raffigurato legato a una colonna.",
+        )
+
+        artwork_2 = Artwork(
+            uri="artwork:san-pietro",
+            title="Liberazione di san Pietro",
+            normalized_title="liberazione di san pietro",
+            artist_uri="artist:battistello",
+            artist_name="Battistello Caracciolo",
+            place_name="Museo di Capodimonte",
+            city="Napoli",
+            description="La scena rappresenta la liberazione di San Pietro.",
+        )
+
+        self.repository.list_artworks_by_artist.return_value = [
+            artwork_1,
+            artwork_2,
+        ]
+
+        self.executor._semantic_filter = semantic_filter
+
+        result = self.executor.execute(
+            name="find_artworks_by_subject",
+            arguments={
+                "subject": "Gesù",
+                "artist_name": "Battistello Caracciolo",
+                "city": "Napoli",
+            },
+        )
+
+        self.assertTrue(result["found"])
+        self.assertEqual(
+            [item["title"] for item in result["data"]],
+            ["Cristo alla colonna"],
+        )
+
+        semantic_filter.filter.assert_called_once()
+        call_arguments = (
+            semantic_filter.filter.call_args.kwargs
+        )
+        self.assertEqual(
+            call_arguments["subject"],
+            "Gesù",
+        )
+        self.assertEqual(
+            [item["title"] for item in call_arguments["artworks"]],
+            [
+                "Cristo alla colonna",
+                "Liberazione di san Pietro",
+            ],
+        )
+    def test_semantic_filter_classifies_each_description_individually(
+        self,
+    ) -> None:
+        llm_client = MagicMock()
+
+        llm_client.chat.side_effect = [
+            MagicMock(content='{"matches": true}'),
+            MagicMock(content='{"matches": false}'),
+        ]
+
+        semantic_filter = _SemanticArtworkFilter(
+            llm_client
+        )
+
+        result = semantic_filter.filter(
+            subject="Ges?",
+            artworks=[
+                {
+                    "title": "Lavanda dei piedi",
+                    "description": (
+                        "Ges? lava i piedi agli apostoli."
+                    ),
+                },
+                {
+                    "title": "Liberazione di san Pietro",
+                    "description": (
+                        "San Pietro viene liberato "
+                        "da un angelo."
+                    ),
+                },
+            ],
+        )
+
+        self.assertEqual(
+            result,
+            [
+                {
+                    "title": "Lavanda dei piedi",
+                    "matches": True,
+                },
+                {
+                    "title": "Liberazione di san Pietro",
+                    "matches": False,
+                },
+            ],
+        )
+
+        self.assertEqual(
+            llm_client.chat.call_count,
+            2,
+        )
+
+        expected_descriptions = [
+            "Ges? lava i piedi agli apostoli.",
+            "San Pietro viene liberato da un angelo.",
+        ]
+
+        for call, expected_description in zip(
+            llm_client.chat.call_args_list,
+            expected_descriptions,
+        ):
+            kwargs = call.kwargs
+
+            self.assertIn("format", kwargs)
+
+            schema = kwargs["format"]
+
+            self.assertEqual(
+                schema["type"],
+                "object",
+            )
+            self.assertEqual(
+                schema["properties"]["matches"]["type"],
+                "boolean",
+            )
+
+            messages = kwargs["messages"]
+            payload = messages[1]["content"]
+
+            import json
+            decoded = json.loads(payload)
+
+            self.assertEqual(
+                decoded,
+                {
+                    "subject": "Ges?",
+                    "description": expected_description,
+                },
+            )
+            self.assertNotIn(
+                "title",
+                decoded,
+            )
+
 if __name__ == "__main__":
     unittest.main()
+
+
+
+
+
+
+

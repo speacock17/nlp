@@ -98,6 +98,52 @@ class ChatbotServiceFactoryTest(unittest.TestCase):
             ],
         )
 
+    @patch(
+        "src.dialogue.chatbot_service_factory."
+        "OllamaLLMClient"
+    )
+    def test_uses_custom_ollama_host(
+        self,
+        mocked_client_class,
+    ) -> None:
+        with patch.dict(
+            "os.environ",
+            {
+                "LLM_ENABLED": "true",
+                "OLLAMA_HOST": (
+                    "http://127.0.0.1:11435"
+                ),
+                "OLLAMA_MODEL": "qwen3:8b",
+                "OLLAMA_NATURALIZER_MODEL": (
+                    "qwen3:8b"
+                ),
+            },
+            clear=False,
+        ):
+            create_chatbot_service(
+                knowledge_repository=(
+                    self.knowledge_repository
+                ),
+                memory_repository=(
+                    self.memory_repository
+                ),
+                llm_enabled=True,
+            )
+
+        self.assertEqual(
+            mocked_client_class.call_args_list,
+            [
+                call(
+                    model="qwen3:8b",
+                    host="http://127.0.0.1:11435",
+                ),
+                call(
+                    model="qwen3:8b",
+                    host="http://127.0.0.1:11435",
+                ),
+            ],
+        )
+
     @patch.dict(
         "os.environ",
         {"LLM_ENABLED": "true"},

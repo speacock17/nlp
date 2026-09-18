@@ -50,9 +50,16 @@ class DialogueManager:
             )
 
         if response.artworks:
+            current_artwork = response.artworks[0]
+
             state.current_artwork_uri = (
-                response.artworks[0].uri
+                current_artwork.uri
             )
+
+            if current_artwork.artist_uri:
+                state.current_artist_uri = (
+                    current_artwork.artist_uri
+                )
 
         if response.places:
             state.current_place_uri = (

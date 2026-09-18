@@ -149,5 +149,122 @@ class NaturalizingAnswerRendererTest(unittest.TestCase):
         self.llm_client.chat.assert_called_once()
 
 
+    def test_requested_fields_description_bypasses_naturalization(
+        self,
+    ) -> None:
+        executions = [
+            self._execution(
+                tool_name="get_artwork_information",
+                arguments={
+                    "requested_fields": [
+                        "description",
+                    ],
+                },
+            )
+        ]
+
+        self.base_renderer.render.return_value = (
+            "Descrizione verbatim"
+        )
+
+        result = self.renderer.render(executions)
+
+        self.assertEqual(
+            result,
+            "Descrizione verbatim",
+        )
+        self.llm_client.chat.assert_not_called()
+
+    def test_requested_fields_description_with_other_field_is_naturalized(
+        self,
+    ) -> None:
+        executions = [
+            self._execution(
+                tool_name="get_artwork_information",
+                arguments={
+                    "requested_fields": [
+                        "description",
+                        "location",
+                    ],
+                },
+            )
+        ]
+
+        self.base_renderer.render.return_value = (
+            "Descrizione. Luogo."
+        )
+        self.llm_client.chat.return_value = LLMResponse(
+            content="Risposta naturale."
+        )
+
+        result = self.renderer.render(executions)
+
+        self.assertEqual(
+            result,
+            "Risposta naturale.",
+        )
+        self.llm_client.chat.assert_called_once()
+
+
+    def test_prompt_forbids_markdown_asterisks(
+        self,
+    ) -> None:
+        executions = [self._execution()]
+
+        self.base_renderer.render.return_value = (
+            "Opera X si trova presso Museo Y."
+        )
+        self.llm_client.chat.return_value = LLMResponse(
+            content="Opera X si trova presso Museo Y."
+        )
+
+        self.renderer.render(executions)
+
+        messages = (
+            self.llm_client.chat.call_args
+            .kwargs["messages"]
+        )
+        system_prompt = messages[0]["content"]
+
+        self.assertIn(
+            "non usare Markdown",
+            system_prompt,
+        )
+        self.assertIn(
+            "asterischi",
+            system_prompt,
+        )
+
+    def test_prompt_requests_bullet_list_for_multiple_artworks(
+        self,
+    ) -> None:
+        executions = [self._execution()]
+
+        self.base_renderer.render.return_value = (
+            "Opera A; Opera B; Opera C."
+        )
+        self.llm_client.chat.return_value = LLMResponse(
+            content="? Opera A\n? Opera B\n? Opera C"
+        )
+
+        self.renderer.render(executions)
+
+        messages = (
+            self.llm_client.chat.call_args
+            .kwargs["messages"]
+        )
+        system_prompt = messages[0]["content"]
+
+        self.assertIn(
+            "elenco puntato",
+            system_prompt,
+        )
+        self.assertIn(
+            "una voce per opera",
+            system_prompt,
+        )
+
+
+
 if __name__ == "__main__":
     unittest.main()

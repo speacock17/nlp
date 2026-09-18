@@ -49,21 +49,36 @@ def create_chatbot_service(
         client = llm_client
         naturalizer_client = llm_client
     else:
-        client = OllamaLLMClient(
-            model=getenv(
+        ollama_host = getenv("OLLAMA_HOST")
+
+        if ollama_host is not None:
+            ollama_host = ollama_host.strip() or None
+
+        client_kwargs = {
+            "model": getenv(
                 "OLLAMA_MODEL",
                 "qwen3:8b",
             )
-        )
-        naturalizer_client = OllamaLLMClient(
-            model=getenv(
+        }
+        naturalizer_kwargs = {
+            "model": getenv(
                 "OLLAMA_NATURALIZER_MODEL",
                 "qwen3:1.7b",
             )
+        }
+
+        if ollama_host is not None:
+            client_kwargs["host"] = ollama_host
+            naturalizer_kwargs["host"] = ollama_host
+
+        client = OllamaLLMClient(**client_kwargs)
+        naturalizer_client = OllamaLLMClient(
+            **naturalizer_kwargs
         )
 
     tool_executor = KnowledgeToolExecutor(
-        knowledge_repository=knowledge_repository
+        knowledge_repository=knowledge_repository,
+        semantic_llm_client=client
     )
 
     answer_renderer = NaturalizingAnswerRenderer(

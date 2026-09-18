@@ -2,7 +2,7 @@ import json
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
-from ollama import chat
+from ollama import Client, chat
 
 
 @dataclass(frozen=True)
@@ -29,8 +29,9 @@ class OllamaLLMClient:
     def __init__(
         self,
         model: str = "qwen3:8b",
-        chat_function: Callable[..., Any] = chat,
+        chat_function: Callable[..., Any] | None = None,
         keep_alive: str = "30m",
+        host: str | None = None,
     ) -> None:
         if not isinstance(model, str):
             raise TypeError(
@@ -46,25 +47,51 @@ class OllamaLLMClient:
                 "vuoto"
             )
 
-        if not callable(chat_function):
+        if (
+            chat_function is not None
+            and not callable(chat_function)
+        ):
             raise TypeError(
                 "La funzione chat deve essere invocabile"
             )
 
+        if host is not None:
+            if not isinstance(host, str):
+                raise TypeError(
+                    "L'host Ollama deve essere una stringa"
+                )
+
+            host = host.strip()
+
+            if not host:
+                raise ValueError(
+                    "L'host Ollama non puo essere vuoto"
+                )
+
         self._model = clean_model
-        self._chat_function = chat_function
+        self._chat_function = (
+            chat_function
+            if chat_function is not None
+            else (
+                Client(host=host).chat
+                if host is not None
+                else chat
+            )
+        )
         self._keep_alive = keep_alive
 
     def chat(
         self,
         messages: list[dict[str, Any]],
         tools: list[dict[str, Any]] | None = None,
+        format: str | dict[str, Any] | None = None,
     ) -> LLMResponse:
         response = self._chat_function(
             model=self._model,
             messages=messages,
             tools=tools,
             think=False,
+            format=format,
             keep_alive=self._keep_alive,
         )
 

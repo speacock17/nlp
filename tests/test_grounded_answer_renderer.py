@@ -437,6 +437,271 @@ class GroundedAnswerRendererTest(unittest.TestCase):
 
                 self.assertEqual(answer, expected)
 
+
+    def test_renders_only_requested_artist_birth_date(
+        self,
+    ) -> None:
+        execution = ToolExecution(
+            tool_call=LLMToolCall(
+                name="get_artist_information",
+                arguments={
+                    "artist_name": "Caravaggio",
+                    "requested_fields": ["birth_date"],
+                },
+            ),
+            result={
+                "found": True,
+                "data": {
+                    "name": "Caravaggio",
+                    "full_name": "Michelangelo Merisi",
+                    "birth_date": "29 settembre 1571",
+                    "birth_place": "Ducato di Milano",
+                    "death_date": "18 luglio 1610",
+                    "death_place": "Porto Ercole",
+                    "description": "Pittore italiano.",
+                },
+            },
+        )
+
+        answer = self.renderer.render([execution])
+
+        self.assertIn(
+            "29 settembre 1571",
+            answer,
+        )
+        self.assertNotIn(
+            "Michelangelo Merisi",
+            answer,
+        )
+        self.assertNotIn(
+            "Ducato di Milano",
+            answer,
+        )
+        self.assertNotIn(
+            "18 luglio 1610",
+            answer,
+        )
+        self.assertNotIn(
+            "Porto Ercole",
+            answer,
+        )
+        self.assertNotIn(
+            "Pittore italiano",
+            answer,
+        )
+
+    def test_renders_requested_artist_birth_date_and_place(
+        self,
+    ) -> None:
+        execution = ToolExecution(
+            tool_call=LLMToolCall(
+                name="get_artist_information",
+                arguments={
+                    "artist_name": "Caravaggio",
+                    "requested_fields": [
+                        "birth_date",
+                        "birth_place",
+                    ],
+                },
+            ),
+            result={
+                "found": True,
+                "data": {
+                    "name": "Caravaggio",
+                    "full_name": "Michelangelo Merisi",
+                    "birth_date": "29 settembre 1571",
+                    "birth_place": "Ducato di Milano",
+                    "death_date": "18 luglio 1610",
+                    "death_place": "Porto Ercole",
+                    "description": "Pittore italiano.",
+                },
+            },
+        )
+
+        answer = self.renderer.render([execution])
+
+        self.assertIn(
+            "29 settembre 1571",
+            answer,
+        )
+        self.assertIn(
+            "Ducato di Milano",
+            answer,
+        )
+        self.assertNotIn(
+            "18 luglio 1610",
+            answer,
+        )
+        self.assertNotIn(
+            "Porto Ercole",
+            answer,
+        )
+
+    def test_renders_only_requested_artwork_multiple_fields(
+        self,
+    ) -> None:
+        execution = ToolExecution(
+            tool_call=LLMToolCall(
+                name="get_artwork_information",
+                arguments={
+                    "artwork_title": (
+                        "Martirio di sant'Orsola"
+                    ),
+                    "requested_fields": [
+                        "author",
+                        "location",
+                        "date",
+                    ],
+                },
+            ),
+            result={
+                "found": True,
+                "data": {
+                    "title": "Martirio di sant'Orsola",
+                    "artist_name": "Caravaggio",
+                    "place_name": "Palazzo Zevallos",
+                    "city": "Napoli",
+                    "year": 1610,
+                    "completion_date": None,
+                    "medium": "Pittura a olio",
+                    "subject": "Martirio di sant'Orsola",
+                    "description": "Dipinto di Caravaggio.",
+                },
+            },
+        )
+
+        answer = self.renderer.render([execution])
+
+        self.assertIn("Caravaggio", answer)
+        self.assertIn("Palazzo Zevallos", answer)
+        self.assertIn("1610", answer)
+
+        self.assertNotIn(
+            "Pittura a olio",
+            answer,
+        )
+        self.assertNotIn(
+            "Martirio di sant'Orsola",
+            answer.replace(
+                "Martirio di sant'Orsola",
+                "",
+                1,
+            ),
+        )
+        self.assertNotIn(
+            "Dipinto di Caravaggio",
+            answer,
+        )
+
+    def test_renders_only_requested_artwork_medium_and_subject(
+        self,
+    ) -> None:
+        execution = ToolExecution(
+            tool_call=LLMToolCall(
+                name="get_artwork_information",
+                arguments={
+                    "artwork_title": "Opera test",
+                    "requested_fields": [
+                        "medium",
+                        "subject",
+                    ],
+                },
+            ),
+            result={
+                "found": True,
+                "data": {
+                    "title": "Opera test",
+                    "artist_name": "Artista test",
+                    "place_name": "Luogo test",
+                    "year": 1600,
+                    "medium": "Olio su tela",
+                    "subject": "Scena religiosa",
+                    "description": "Descrizione test.",
+                },
+            },
+        )
+
+        answer = self.renderer.render([execution])
+
+        self.assertIn("Olio su tela", answer)
+        self.assertIn("Scena religiosa", answer)
+        self.assertNotIn("Artista test", answer)
+        self.assertNotIn("Luogo test", answer)
+        self.assertNotIn("1600", answer)
+        self.assertNotIn("Descrizione test", answer)
+
+    def test_renders_only_requested_place_address(
+        self,
+    ) -> None:
+        execution = ToolExecution(
+            tool_call=LLMToolCall(
+                name="get_place_information",
+                arguments={
+                    "place_name": (
+                        "Museo nazionale di Capodimonte"
+                    ),
+                    "requested_fields": ["address"],
+                },
+            ),
+            result={
+                "found": True,
+                "data": {
+                    "name": (
+                        "Museo nazionale di Capodimonte"
+                    ),
+                    "city": "Napoli",
+                    "place_type": "Museo",
+                    "address": "Via Miano, 2",
+                    "latitude": 40.867,
+                    "longitude": 14.250,
+                    "description": "Museo napoletano.",
+                },
+            },
+        )
+
+        answer = self.renderer.render([execution])
+
+        self.assertIn("Via Miano, 2", answer)
+        self.assertNotIn("Museo napoletano", answer)
+        self.assertNotIn("40.867", answer)
+        self.assertNotIn("14.25", answer)
+
+    def test_renders_requested_place_coordinates(
+        self,
+    ) -> None:
+        execution = ToolExecution(
+            tool_call=LLMToolCall(
+                name="get_place_information",
+                arguments={
+                    "place_name": (
+                        "Museo nazionale di Capodimonte"
+                    ),
+                    "requested_fields": ["coordinates"],
+                },
+            ),
+            result={
+                "found": True,
+                "data": {
+                    "name": (
+                        "Museo nazionale di Capodimonte"
+                    ),
+                    "city": "Napoli",
+                    "place_type": "Museo",
+                    "address": "Via Miano, 2",
+                    "latitude": 40.867,
+                    "longitude": 14.250,
+                    "description": "Museo napoletano.",
+                },
+            },
+        )
+
+        answer = self.renderer.render([execution])
+
+        self.assertIn("40.867", answer)
+        self.assertIn("14.25", answer)
+        self.assertNotIn("Via Miano, 2", answer)
+        self.assertNotIn("Museo napoletano", answer)
+
     def test_combines_multiple_tool_results(
         self,
     ) -> None:

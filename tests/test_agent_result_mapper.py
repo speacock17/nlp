@@ -186,6 +186,151 @@ class AgentResultMapperTest(unittest.TestCase):
             Intent.ARTWORK_DATE,
         )
 
+
+    def test_infers_artwork_intent_from_requested_fields(
+        self,
+    ) -> None:
+        cases = [
+            (
+                ["author"],
+                Intent.ARTWORK_AUTHOR,
+            ),
+            (
+                ["location"],
+                Intent.ARTWORK_LOCATION,
+            ),
+            (
+                ["date"],
+                Intent.ARTWORK_DATE,
+            ),
+            (
+                ["description"],
+                Intent.ARTWORK_DESCRIPTION,
+            ),
+            (
+                ["overview"],
+                Intent.ARTWORK_DESCRIPTION,
+            ),
+        ]
+
+        for requested_fields, expected_intent in cases:
+            with self.subTest(
+                requested_fields=requested_fields
+            ):
+                result = AgentResult(
+                    content="Risposta grounded.",
+                    executions=[
+                        ToolExecution(
+                            tool_call=LLMToolCall(
+                                name=(
+                                    "get_artwork_information"
+                                ),
+                                arguments={
+                                    "artwork_title": (
+                                        "Martirio di "
+                                        "sant'Orsola"
+                                    ),
+                                    "requested_fields": (
+                                        requested_fields
+                                    ),
+                                },
+                            ),
+                            result={
+                                "found": True,
+                                "data": {
+                                    "uri": "artwork:1",
+                                    "title": (
+                                        "Martirio di "
+                                        "sant'Orsola"
+                                    ),
+                                    "normalized_title": (
+                                        "martirio di "
+                                        "sant orsola"
+                                    ),
+                                    "artist_uri": "artist:1",
+                                    "artist_name": "Caravaggio",
+                                    "place_uri": "place:1",
+                                    "place_name": (
+                                        "Palazzo Zevallos"
+                                    ),
+                                    "city": "Napoli",
+                                    "year": 1610,
+                                    "completion_date": None,
+                                    "medium": None,
+                                    "subject": None,
+                                    "description": None,
+                                    "image_url": None,
+                                    "source": "DBpedia",
+                                },
+                            },
+                        )
+                    ],
+                )
+
+                response = self.mapper.map(result)
+
+                self.assertEqual(
+                    response.intent,
+                    expected_intent,
+                )
+
+    def test_multiple_requested_artwork_fields_use_description_intent(
+        self,
+    ) -> None:
+        result = AgentResult(
+            content="Autore, luogo e data.",
+            executions=[
+                ToolExecution(
+                    tool_call=LLMToolCall(
+                        name="get_artwork_information",
+                        arguments={
+                            "artwork_title": (
+                                "Martirio di sant'Orsola"
+                            ),
+                            "requested_fields": [
+                                "author",
+                                "location",
+                                "date",
+                            ],
+                        },
+                    ),
+                    result={
+                        "found": True,
+                        "data": {
+                            "uri": "artwork:1",
+                            "title": (
+                                "Martirio di sant'Orsola"
+                            ),
+                            "normalized_title": (
+                                "martirio di sant orsola"
+                            ),
+                            "artist_uri": "artist:1",
+                            "artist_name": "Caravaggio",
+                            "place_uri": "place:1",
+                            "place_name": (
+                                "Palazzo Zevallos"
+                            ),
+                            "city": "Napoli",
+                            "year": 1610,
+                            "completion_date": None,
+                            "medium": None,
+                            "subject": None,
+                            "description": None,
+                            "image_url": None,
+                            "source": "DBpedia",
+                        },
+                    },
+                )
+            ],
+        )
+
+        response = self.mapper.map(result)
+
+        self.assertEqual(
+            response.intent,
+            Intent.ARTWORK_DESCRIPTION,
+        )
+
     def test_maps_place_list(
         self,
     ) -> None:

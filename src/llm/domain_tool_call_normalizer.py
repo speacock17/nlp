@@ -42,6 +42,23 @@ class DomainToolCallNormalizer:
         if self._is_caravaggio_alias(artist_name):
             arguments["artist_name"] = "Caravaggio"
 
+        if tool_name in {
+            "get_artist_information",
+            "get_artwork_information",
+        }:
+            requested_fields = arguments.get(
+                "requested_fields"
+            )
+
+            if (
+                isinstance(requested_fields, list)
+                and "overview" in requested_fields
+                and len(requested_fields) > 1
+            ):
+                arguments["requested_fields"] = [
+                    "overview"
+                ]
+
         if self._is_naples_place_request(
             user_text=user_text,
             tool_name=tool_name,

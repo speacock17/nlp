@@ -14,6 +14,7 @@ from src.llm.tool_calling_agent import AgentResult
 _ARTWORK_TOOLS = {
     "get_artwork_information",
     "list_artworks_by_artist",
+    "find_artworks_by_subject",
     "list_artworks_by_place",
     "list_places_with_artworks",
     "search_artworks",
@@ -24,6 +25,7 @@ _DEFAULT_INTENTS = {
     "list_artworks_by_artist": (
         Intent.LIST_ARTWORKS_BY_ARTIST
     ),
+    "find_artworks_by_subject": Intent.ARTWORK_DESCRIPTION,
     "list_artworks_by_place": Intent.PLACE_ARTWORKS,
     "list_places": Intent.LIST_PLACES,
     "list_places_with_artworks": Intent.LIST_PLACES,
@@ -138,11 +140,37 @@ class AgentResultMapper:
         first_tool = first_execution.tool_call.name
 
         if first_tool == "get_artwork_information":
-            requested_information = (
+            arguments = (
                 first_execution
                 .tool_call
                 .arguments
-                .get("requested_information")
+            )
+
+            requested_fields = arguments.get(
+                "requested_fields"
+            )
+
+            if isinstance(requested_fields, list):
+                normalized_fields = [
+                    field_name.strip().casefold()
+                    for field_name in requested_fields
+                    if isinstance(field_name, str)
+                    and field_name.strip()
+                ]
+
+                if len(normalized_fields) == 1:
+                    return (
+                        _ARTWORK_INFORMATION_INTENTS
+                        .get(
+                            normalized_fields[0],
+                            Intent.ARTWORK_DESCRIPTION,
+                        )
+                    )
+
+                return Intent.ARTWORK_DESCRIPTION
+
+            requested_information = arguments.get(
+                "requested_information"
             )
 
             if isinstance(
